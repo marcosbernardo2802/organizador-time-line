@@ -476,30 +476,66 @@ function App() {
       if (!tlFile) { alert('timeline.json não encontrado nesse job.'); return; }
       const tl = await driveApi.readJson(tlFile.id);
 
-      // Monta clips para a timeline visual
-      const newLibrary = [];
-      const newClips   = [];
+      const newClips     = [];
+      const extraLibrary = [];
 
-      tl.cenas.forEach((cena, i) => {
-        const mediaId = `imported-${i}-${Date.now()}`;
-        newLibrary.push({ id: mediaId, name: cena.arquivo, type: 'image/jpeg', duration: cena.duration });
-        newClips.push({
-          id: `clip-${i}-${Date.now()}`,
-          mediaId,
-          trackId:    'video-1',
-          startTime:  cena.start,
-          duration:   cena.duration_real || cena.duration,
-          offset:     0,
-          transition: 'none',
-          effect:     'none',
+      // Usa setLibrary com callback para ter acesso à biblioteca atual
+      setLibrary(prevLib => {
+        // Índice nome→id da biblioteca já carregada
+        const byName = {};
+        prevLib.forEach(m => { byName[m.name.toLowerCase()] = m.id; });
+
+        tl.cenas.forEach((cena, i) => {
+          const nomeNorm = cena.arquivo.toLowerCase();
+          let mediaId = byName[nomeNorm];
+
+          // Se não achou, cria placeholder para mostrar nome na timeline
+          if (!mediaId) {
+            mediaId = `placeholder-${i}-${Date.now()}`;
+            extraLibrary.push({
+              id: mediaId, name: cena.arquivo,
+              type: 'image/jpeg', url: null,
+              duration: cena.duration, placeholder: true,
+            });
+            byName[nomeNorm] = mediaId;
+          }
+
+          newClips.push({
+            id: `clip-${i}-${Date.now()}`,
+            mediaId,
+            trackId:    'video-1',
+            startTime:  cena.start,
+            duration:   cena.duration_real || cena.duration,
+            offset: 0, transition: 'none', effect: 'none',
+          });
         });
+
+        // Adiciona áudio automaticamente se estiver na biblioteca
+        const audioMedia = prevLib.find(m => m.type && m.type.startsWith('audio'));
+        if (audioMedia) {
+          newClips.push({
+            id: `clip-audio-${Date.now()}`,
+            mediaId:   audioMedia.id,
+            trackId:   'audio-1',
+            startTime: 0,
+            duration:  tl.duracao_total,
+            offset: 0, transition: 'none', effect: 'none',
+          });
+        }
+
+        return extraLibrary.length > 0 ? [...prevLib, ...extraLibrary] : prevLib;
       });
 
-      setLibrary(newLibrary);
       setClips(newClips);
       setDuration(tl.duracao_total + 10);
       setCurrentTime(0);
-      alert(`✅ Timeline importada! ${tl.total_cenas} cenas carregadas.\nScore médio: ${tl.score_medio}`);
+
+      const faltando = tl.cenas.filter(c => !document.querySelector(`[data-name="${c.arquivo}"]`)).length;
+      const msg = extraLibrary.length > 0
+        ? `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}\n\n⚠️ ${extraLibrary.length} imagens não encontradas na biblioteca.\nFaça upload pelo "+" para aparecerem no preview.`
+        : `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}`;
+      alert(msg);
+
     } catch(e) {
       alert('Erro ao importar timeline: ' + e.message);
     }
