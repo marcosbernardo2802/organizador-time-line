@@ -3,22 +3,1028 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Crônicas Estelares</title>
+  <title>Crônicas Estelares — Editor</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.js"></script>
+  <!-- Google Identity Services -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
   <style>
-    body {
-      margin: 0;
-      background: #030712;
-      color: #e2e8f0;
-      font-family: sans-serif;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    :root {
+      --bg:        #04060f;
+      --surface:   #080d1a;
+      --panel:     #0c1525;
+      --border:    #1a2a45;
+      --accent:    #2d6be4;
+      --accent2:   #00d4ff;
+      --gold:      #f0a500;
+      --text:      #c8d8f0;
+      --muted:     #4a6080;
+      --danger:    #e04040;
+      --success:   #00c875;
+      --track-vid: rgba(45,107,228,0.15);
+      --track-nar: rgba(0,200,117,0.10);
+      --track-bgm: rgba(0,212,255,0.10);
     }
-    h1 { font-size: 1.5rem; opacity: 0.4; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Exo 2', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Scanline overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 9999;
+    }
+
+    #root { height: 100vh; display: flex; flex-direction: column; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    /* ── Glow utilities ── */
+    .glow-accent { box-shadow: 0 0 12px rgba(45,107,228,0.4); }
+    .glow-gold   { box-shadow: 0 0 12px rgba(240,165,0,0.4); }
+    .glow-green  { box-shadow: 0 0 12px rgba(0,200,117,0.4); }
+
+    /* ── HUD corners ── */
+    .hud-box {
+      position: relative;
+      border: 1px solid var(--border);
+      background: var(--panel);
+    }
+    .hud-box::before, .hud-box::after {
+      content: '';
+      position: absolute;
+      width: 8px; height: 8px;
+      border-color: var(--accent2);
+      border-style: solid;
+    }
+    .hud-box::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
+    .hud-box::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 3px; border: none;
+      font-family: 'Rajdhani', sans-serif; font-weight: 600;
+      font-size: 13px; letter-spacing: 0.5px;
+      cursor: pointer; transition: all 0.15s;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary {
+      background: var(--accent); color: #fff;
+      border: 1px solid rgba(45,107,228,0.6);
+    }
+    .btn-primary:hover:not(:disabled) {
+      background: #3d7bf0;
+      box-shadow: 0 0 16px rgba(45,107,228,0.5);
+    }
+    .btn-gold {
+      background: transparent; color: var(--gold);
+      border: 1px solid var(--gold);
+    }
+    .btn-gold:hover:not(:disabled) {
+      background: rgba(240,165,0,0.1);
+      box-shadow: 0 0 16px rgba(240,165,0,0.3);
+    }
+    .btn-ghost {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover:not(:disabled) { color: var(--text); border-color: var(--accent); }
+    .btn-danger {
+      background: transparent; color: var(--danger);
+      border: 1px solid rgba(224,64,64,0.4);
+    }
+    .btn-danger:hover:not(:disabled) { background: rgba(224,64,64,0.1); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 100;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(6px);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      width: 100%; max-width: 560px;
+      max-height: 90vh; overflow-y: auto;
+      position: relative;
+    }
+    .modal-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(45,107,228,0.06);
+    }
+    .modal-title {
+      font-family: 'Rajdhani', sans-serif;
+      font-size: 15px; font-weight: 700;
+      letter-spacing: 1px; color: var(--accent2);
+      text-transform: uppercase;
+    }
+    .modal-body { padding: 20px 18px; }
+
+    /* ── Upload slot ── */
+    .upload-slot {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 12px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+      margin-bottom: 8px;
+    }
+    .upload-slot:hover { border-color: var(--accent); }
+    .upload-slot.done  { border-color: var(--success); }
+    .upload-slot-icon {
+      width: 32px; height: 32px; border-radius: 3px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--panel); flex-shrink: 0;
+    }
+    .upload-slot-info { flex: 1; overflow: hidden; }
+    .upload-slot-label { font-size: 12px; color: var(--muted); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; }
+    .upload-slot-name  { font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── Progress bar ── */
+    .progress-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.3s; }
+
+    /* ── Timeline track ── */
+    .track-row { height: 48px; border-bottom: 1px solid var(--border); position: relative; }
+
+    /* ── Mono text ── */
+    .mono { font-family: 'Share Tech Mono', monospace; }
+
+    /* ── Status dot ── */
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block; flex-shrink: 0;
+    }
+    .status-dot.online  { background: var(--success); box-shadow: 0 0 6px var(--success); animation: pulse 2s infinite; }
+    .status-dot.offline { background: var(--muted); }
+    .status-dot.working { background: var(--gold); box-shadow: 0 0 6px var(--gold); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.4; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes kenburns {
+      0%   { transform: scale(1) translate(0,0); }
+      100% { transform: scale(1.12) translate(-2%,-2%); }
+    }
+
+    .animate-fade { animation: fadeIn 0.3s ease; }
   </style>
 </head>
 <body>
-  <h1>🚀 Em construção...</h1>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useRef, useEffect, useCallback } = React;
+
+// ─── CONSTANTES ───────────────────────────────────────────────────────────────
+const CLIENT_ID   = '825962387496-lccer4g2sijjktrp9k3q3uh9mkd30du4.apps.googleusercontent.com';
+const SCOPE       = 'https://www.googleapis.com/auth/drive';
+const MOTOR_ROOT  = 'MotorDobra';
+const PPS         = 40; // pixels por segundo na timeline
+
+const TRACKS = [
+  { id: 'video-1', name: 'Vídeo / Imagens', color: 'var(--track-vid)' },
+  { id: 'audio-1', name: 'Narração',         color: 'var(--track-nar)' },
+  { id: 'audio-2', name: 'Música de Fundo',  color: 'var(--track-bgm)' },
+];
+
+const fmt = (s) => {
+  const m  = Math.floor(s / 60);
+  const ss = Math.floor(s % 60);
+  const ms = Math.floor((s % 1) * 100);
+  return `${String(m).padStart(2,'0')}:${String(ss).padStart(2,'0')}.${String(ms).padStart(2,'0')}`;
+};
+
+// ─── GOOGLE DRIVE API ─────────────────────────────────────────────────────────
+const driveApi = {
+  token: null,
+
+  async getOrCreateFolder(parentId, name) {
+    const q = `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`;
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files?q=${encodeURIComponent(q)}&fields=files(id,name)`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    const d = await r.json();
+    if (d.files && d.files.length > 0) return d.files[0].id;
+    const cr = await fetch('https://www.googleapis.com/drive/v3/files', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${this.token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] })
+    });
+    const cd = await cr.json();
+    return cd.id;
+  },
+
+  async uploadFile(folderId, file, name, onProgress) {
+    const meta = JSON.stringify({ name: name || file.name, parents: [folderId] });
+    const form = new FormData();
+    form.append('metadata', new Blob([meta], { type: 'application/json' }));
+    form.append('file', file);
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink');
+      xhr.setRequestHeader('Authorization', `Bearer ${this.token}`);
+      xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
+      xhr.onload  = () => xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(new Error(`Upload falhou: ${xhr.status}`));
+      xhr.onerror = () => reject(new Error('Erro de rede no upload'));
+      xhr.send(form);
+    });
+  },
+
+  async uploadJson(folderId, name, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const file = new File([blob], name, { type: 'application/json' });
+    return this.uploadFile(folderId, file, name);
+  },
+
+  async listFolder(folderId) {
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files?q='${folderId}' in parents and trashed=false&fields=files(id,name,mimeType,modifiedTime)&orderBy=createdTime desc`,
+      { headers: { Authorization: `Bearer ${this.token}` } }
+    );
+    const d = await r.json();
+    return d.files || [];
+  },
+
+  async readJson(fileId) {
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    return r.json();
+  },
+
+  async getFileLink(fileId) {
+    const r = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink,webContentLink`, {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    return r.json();
+  },
+
+  async getRootId() {
+    const r = await fetch('https://www.googleapis.com/drive/v3/files/root?fields=id', {
+      headers: { Authorization: `Bearer ${this.token}` }
+    });
+    const d = await r.json();
+    return d.id;
+  }
+};
+
+// ─── APP ──────────────────────────────────────────────────────────────────────
+function App() {
+  // Auth
+  const [authState, setAuthState]   = useState('idle'); // idle | loading | ok | error
+  const [userInfo,  setUserInfo]    = useState(null);
+  const tokenClientRef              = useRef(null);
+
+  // Drive
+  const [driveReady,  setDriveReady]  = useState(false);
+  const [folderIds,   setFolderIds]   = useState({}); // { root, fila, concluido, erro }
+
+  // UI modais
+  const [modal, setModal] = useState(null); // null | 'ai' | 'export' | 'jobs'
+
+  // IA / upload
+  const [aiFiles,  setAiFiles]  = useState({ audio: null, roteiro: null, images: [], bgm: null });
+  const [aiStatus, setAiStatus] = useState({ step: '', msg: '', pct: 0, running: false, error: '' });
+
+  // Jobs no Drive
+  const [jobs, setJobs] = useState([]);
+  const pollRef         = useRef(null);
+
+  // Timeline (editor)
+  const [clips,       setClips]       = useState([]);
+  const [library,     setLibrary]     = useState([]);
+  const [duration,    setDuration]    = useState(60);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [isPlaying,   setIsPlaying]   = useState(false);
+  const [selectedId,  setSelectedId]  = useState(null);
+  const [dragState,   setDragState]   = useState(null);
+
+  const timelineRef = useRef(null);
+  const animRef     = useRef(null);
+  const lastRef     = useRef(Date.now());
+
+  // Preview
+  const [previewSrc, setPreviewSrc] = useState(null);
+
+  // ── GOOGLE LOGIN ────────────────────────────────────────────────────────────
+  const initGoogleAuth = useCallback(() => {
+    if (!window.google) { setTimeout(initGoogleAuth, 500); return; }
+    tokenClientRef.current = window.google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPE,
+      callback: async (resp) => {
+        if (resp.error) { setAuthState('error'); return; }
+        driveApi.token = resp.access_token;
+        setAuthState('ok');
+        // Pega info do usuário
+        try {
+          const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${resp.access_token}` }
+          });
+          setUserInfo(await r.json());
+        } catch {}
+        await setupDriveFolders();
+      }
+    });
+  }, []);
+
+  useEffect(() => { initGoogleAuth(); }, [initGoogleAuth]);
+
+  const handleLogin = () => {
+    setAuthState('loading');
+    tokenClientRef.current?.requestAccessToken({ prompt: 'consent' });
+  };
+
+  // ── DRIVE: ESTRUTURA DE PASTAS ──────────────────────────────────────────────
+  const setupDriveFolders = async () => {
+    try {
+      const rootId   = await driveApi.getRootId();
+      const motorId  = await driveApi.getOrCreateFolder(rootId, 'MotorDobra');
+      const filaId   = await driveApi.getOrCreateFolder(motorId, 'fila');
+      const concId   = await driveApi.getOrCreateFolder(motorId, 'concluido');
+      const erroId   = await driveApi.getOrCreateFolder(motorId, 'erro');
+      const procId   = await driveApi.getOrCreateFolder(motorId, 'processando');
+      setFolderIds({ root: rootId, motor: motorId, fila: filaId, concluido: concId, erro: erroId, processando: procId });
+      setDriveReady(true);
+      startPolling(concId, erroId, procId, filaId);
+    } catch(e) {
+      console.error('Erro ao configurar pastas Drive:', e);
+    }
+  };
+
+  // ── POLLING: verifica jobs concluídos ───────────────────────────────────────
+  const startPolling = (concId, erroId, procId, filaId) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const [conc, erro, proc, fila] = await Promise.all([
+          driveApi.listFolder(concId),
+          driveApi.listFolder(erroId),
+          driveApi.listFolder(procId),
+          driveApi.listFolder(filaId),
+        ]);
+        setJobs([
+          ...fila.map(j => ({ ...j, status: 'fila' })),
+          ...proc.map(j => ({ ...j, status: 'processando' })),
+          ...conc.map(j => ({ ...j, status: 'concluido' })),
+          ...erro.map(j => ({ ...j, status: 'erro' })),
+        ]);
+      } catch {}
+    }, 12000);
+  };
+
+  useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
+
+  // ── ENVIAR JOB PARA O MOTOR ─────────────────────────────────────────────────
+  const enviaJob = async () => {
+    if (!driveReady || !aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0) return;
+
+    setAiStatus({ step: 'upload', msg: 'Criando pasta do job...', pct: 5, running: true, error: '' });
+
+    try {
+      const jobName = `job_${Date.now()}`;
+      const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
+
+      // Upload áudio
+      setAiStatus(p => ({ ...p, msg: 'Enviando áudio...', pct: 15 }));
+      await driveApi.uploadFile(jobId, aiFiles.audio, 'audio.' + aiFiles.audio.name.split('.').pop(),
+        (p) => setAiStatus(prev => ({ ...prev, pct: 15 + p * 20 })));
+
+      // Upload roteiro
+      setAiStatus(p => ({ ...p, msg: 'Enviando roteiro...', pct: 36 }));
+      await driveApi.uploadFile(jobId, aiFiles.roteiro, 'roteiro.txt');
+
+      // Upload imagens
+      for (let i = 0; i < aiFiles.images.length; i++) {
+        const img = aiFiles.images[i];
+        const ext = img.name.split('.').pop();
+        const num = String(i + 1).padStart(4, '0');
+        setAiStatus(p => ({ ...p, msg: `Enviando imagem ${i+1}/${aiFiles.images.length}...`, pct: 38 + (i / aiFiles.images.length) * 40 }));
+        await driveApi.uploadFile(jobId, img, `${num}.${ext}`);
+      }
+
+      // Upload BGM se existir
+      if (aiFiles.bgm) {
+        setAiStatus(p => ({ ...p, msg: 'Enviando música de fundo...', pct: 80 }));
+        await driveApi.uploadFile(jobId, aiFiles.bgm, 'bgm.' + aiFiles.bgm.name.split('.').pop());
+      }
+
+      // Cria job.json
+      setAiStatus(p => ({ ...p, msg: 'Criando instrução do job...', pct: 90 }));
+      const jobJson = {
+        tipo: 'timeline_e_render',
+        nome_projeto: jobName,
+        audio: 'audio.' + aiFiles.audio.name.split('.').pop(),
+        roteiro: 'roteiro.txt',
+        bgm: aiFiles.bgm ? 'bgm.' + aiFiles.bgm.name.split('.').pop() : null,
+        total_imagens: aiFiles.images.length,
+        criado_em: new Date().toISOString(),
+      };
+      await driveApi.uploadJson(jobId, 'job.json', jobJson);
+
+      setAiStatus({ step: 'aguardando', msg: '✅ Job enviado! Aguardando o Motor de Dobra processar...', pct: 100, running: false, error: '' });
+      setModal(null);
+      setAiFiles({ audio: null, roteiro: null, images: [], bgm: null });
+
+    } catch(e) {
+      setAiStatus({ step: 'erro', msg: '', pct: 0, running: false, error: `Erro: ${e.message}` });
+    }
+  };
+
+  // ── IMPORTAR TIMELINE.JSON DO DRIVE ────────────────────────────────────────
+  const importaTimeline = async (jobFolderId, jobName) => {
+    try {
+      const files = await driveApi.listFolder(jobFolderId);
+      const tlFile = files.find(f => f.name === 'timeline.json');
+      if (!tlFile) { alert('timeline.json não encontrado nesse job.'); return; }
+      const tl = await driveApi.readJson(tlFile.id);
+
+      // Monta clips para a timeline visual
+      const newLibrary = [];
+      const newClips   = [];
+
+      tl.cenas.forEach((cena, i) => {
+        const mediaId = `imported-${i}-${Date.now()}`;
+        newLibrary.push({ id: mediaId, name: cena.arquivo, type: 'image/jpeg', duration: cena.duration });
+        newClips.push({
+          id: `clip-${i}-${Date.now()}`,
+          mediaId,
+          trackId:    'video-1',
+          startTime:  cena.start,
+          duration:   cena.duration_real || cena.duration,
+          offset:     0,
+          transition: 'none',
+          effect:     'none',
+        });
+      });
+
+      setLibrary(newLibrary);
+      setClips(newClips);
+      setDuration(tl.duracao_total + 10);
+      setCurrentTime(0);
+      alert(`✅ Timeline importada! ${tl.total_cenas} cenas carregadas.\nScore médio: ${tl.score_medio}`);
+    } catch(e) {
+      alert('Erro ao importar timeline: ' + e.message);
+    }
+  };
+
+  // ── DRAG & DROP TIMELINE ────────────────────────────────────────────────────
+  const onClipMouseDown = (e, clipId, type) => {
+    e.stopPropagation();
+    const clip = clips.find(c => c.id === clipId);
+    setDragState({ id: clipId, type, startX: e.clientX, origStart: clip.startTime, origDur: clip.duration });
+    setSelectedId(clipId);
+  };
+
+  const onMouseMove = (e) => {
+    if (!dragState) return;
+    const delta = (e.clientX - dragState.startX) / PPS;
+    setClips(prev => prev.map(c => {
+      if (c.id !== dragState.id) return c;
+      if (dragState.type === 'move')         return { ...c, startTime: Math.max(0, dragState.origStart + delta) };
+      if (dragState.type === 'resize-right') return { ...c, duration: Math.max(0.5, dragState.origDur + delta) };
+      if (dragState.type === 'resize-left') {
+        const ns = Math.max(0, dragState.origStart + delta);
+        const nd = Math.max(0.5, dragState.origDur - (ns - dragState.origStart));
+        return { ...c, startTime: ns, duration: nd };
+      }
+      return c;
+    }));
+  };
+
+  const onMouseUp = () => { setDragState(null); };
+
+  // ── PLAYBACK ────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isPlaying) {
+      const tick = () => {
+        const now   = Date.now();
+        const delta = (now - lastRef.current) / 1000;
+        lastRef.current = now;
+        setCurrentTime(t => {
+          if (t + delta >= duration) { setIsPlaying(false); return duration; }
+          return t + delta;
+        });
+        animRef.current = requestAnimationFrame(tick);
+      };
+      lastRef.current = Date.now();
+      animRef.current = requestAnimationFrame(tick);
+    } else {
+      cancelAnimationFrame(animRef.current);
+    }
+    return () => cancelAnimationFrame(animRef.current);
+  }, [isPlaying, duration]);
+
+  // Preview da imagem ativa
+  useEffect(() => {
+    const active = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
+    if (active) {
+      const media = library.find(m => m.id === active.mediaId);
+      setPreviewSrc(media?.url || null);
+    } else setPreviewSrc(null);
+  }, [currentTime, clips, library]);
+
+  // ── FILE INPUT HELPER ───────────────────────────────────────────────────────
+  const handleFiles = async (e, type) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    if (type === 'images') {
+      const sorted = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      setAiFiles(p => ({ ...p, images: sorted }));
+    } else {
+      setAiFiles(p => ({ ...p, [type]: files[0] }));
+    }
+    // Cria URLs locais para biblioteca
+    if (type === 'images') {
+      const imgs = files.sort((a,b) => a.name.localeCompare(b.name,undefined,{numeric:true}));
+      const newLib = imgs.map((f,i) => ({
+        id: `local-img-${i}-${Date.now()}`,
+        name: f.name,
+        type: f.type,
+        url: URL.createObjectURL(f),
+        duration: 5,
+      }));
+      setLibrary(prev => [...prev, ...newLib]);
+    }
+  };
+
+  // ── STATUS BADGE ────────────────────────────────────────────────────────────
+  const motorStatus = () => {
+    const proc = jobs.filter(j => j.status === 'processando').length;
+    const fila  = jobs.filter(j => j.status === 'fila').length;
+    if (proc > 0) return { dot: 'working', label: `Processando ${proc} job(s)` };
+    if (fila > 0) return { dot: 'online',  label: `${fila} job(s) na fila` };
+    if (driveReady) return { dot: 'online', label: 'Motor conectado' };
+    return { dot: 'offline', label: 'Desconectado' };
+  };
+
+  const mStatus = motorStatus();
+  const selectedClip = clips.find(c => c.id === selectedId);
+
+  // ── RENDER ──────────────────────────────────────────────────────────────────
+  if (authState !== 'ok') {
+    return (
+      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', gap:24 }}>
+        {/* Logo / título */}
+        <div style={{ textAlign:'center', marginBottom:8 }}>
+          <div style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:6, color:'var(--muted)', marginBottom:6 }}>SISTEMA DE EDIÇÃO</div>
+          <h1 style={{ fontFamily:'Rajdhani', fontSize:36, fontWeight:700, letterSpacing:3, color:'var(--accent2)', lineHeight:1 }}>CRÔNICAS ESTELARES</h1>
+          <div style={{ fontFamily:'Share Tech Mono', fontSize:11, color:'var(--muted)', marginTop:6 }}>Motor de Dobra · v3.0</div>
+        </div>
+
+        <div className="hud-box" style={{ padding:'32px 40px', textAlign:'center', maxWidth:360, width:'100%' }}>
+          <div style={{ marginBottom:20 }}>
+            <div style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:2, color:'var(--muted)', marginBottom:4 }}>AUTENTICAÇÃO NECESSÁRIA</div>
+            <p style={{ fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
+              Conecte sua conta Google para acessar o Drive e enviar projetos ao Motor de Dobra.
+            </p>
+          </div>
+
+          {authState === 'error' && (
+            <div style={{ color:'var(--danger)', fontSize:12, marginBottom:12 }}>Falha na autenticação. Tente novamente.</div>
+          )}
+
+          <button
+            className="btn btn-primary"
+            onClick={handleLogin}
+            disabled={authState === 'loading'}
+            style={{ width:'100%', justifyContent:'center', padding:'10px 0', fontSize:14 }}
+          >
+            {authState === 'loading' ? '⟳ Conectando...' : '🔑 Entrar com Google'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}
+         onMouseMove={onMouseMove} onMouseUp={onMouseUp} onMouseLeave={onMouseUp}>
+
+      {/* ── HEADER ── */}
+      <header style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'0 16px', height:44,
+        background:'var(--surface)', borderBottom:'1px solid var(--border)',
+        flexShrink:0,
+      }}>
+        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontFamily:'Rajdhani', fontWeight:700, fontSize:15, letterSpacing:2, color:'var(--accent2)' }}>
+            CRÔNICAS ESTELARES
+          </span>
+          <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>v3.0</span>
+          <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:8 }}>
+            <span className={`status-dot ${mStatus.dot}`}></span>
+            <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>{mStatus.label}</span>
+          </div>
+        </div>
+
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          {userInfo && (
+            <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'Share Tech Mono' }}>
+              {userInfo.email}
+            </span>
+          )}
+          <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={() => setModal('jobs')}>
+            📡 Jobs ({jobs.length})
+          </button>
+          <button className="btn btn-gold" onClick={() => setModal('ai')}>
+            ✦ Enviar ao Motor
+          </button>
+          <button className="btn btn-primary" onClick={() => setModal('export')}>
+            ⬇ Exportar
+          </button>
+        </div>
+      </header>
+
+      {/* ── CORPO PRINCIPAL ── */}
+      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+
+        {/* ── BIBLIOTECA ── */}
+        <div className="hud-box" style={{ width:200, display:'flex', flexDirection:'column', borderRadius:0, borderTop:'none', borderLeft:'none', borderBottom:'none' }}>
+          <div style={{ padding:'8px 10px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+            <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:1, color:'var(--muted)' }}>BIBLIOTECA</span>
+            <label style={{ cursor:'pointer', color:'var(--accent)', fontSize:12 }} title="Importar mídia">
+              +
+              <input type="file" multiple accept="video/*,image/*,audio/*" style={{ display:'none' }} onChange={async (e) => {
+                for (const f of Array.from(e.target.files)) {
+                  const url = URL.createObjectURL(f);
+                  const dur = await new Promise(res => {
+                    if (f.type.startsWith('image')) return res(5);
+                    const m = document.createElement(f.type.startsWith('video') ? 'video' : 'audio');
+                    m.onloadedmetadata = () => res(m.duration);
+                    m.src = url;
+                  });
+                  setLibrary(prev => [...prev, { id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur }]);
+                }
+              }}/>
+            </label>
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:6 }}>
+            {library.length === 0 && (
+              <div style={{ color:'var(--muted)', fontSize:11, textAlign:'center', padding:16 }}>Nenhuma mídia</div>
+            )}
+            {library.map(m => (
+              <div key={m.id} onClick={() => {
+                const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
+                const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
+                setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, transition:'none', effect:'none' }]);
+                if (lastEnd + m.duration > duration) setDuration(lastEnd + m.duration + 10);
+              }} style={{
+                display:'flex', alignItems:'center', gap:6, padding:'5px 6px',
+                background:'var(--bg)', border:'1px solid var(--border)', borderRadius:2,
+                marginBottom:4, cursor:'pointer', fontSize:11,
+              }}>
+                <span>{m.type.startsWith('video') ? '🎬' : m.type.startsWith('audio') ? '🎵' : '🖼️'}</span>
+                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>{m.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── PREVIEW ── */}
+        <div style={{ flex:1, background:'#000', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
+          {previewSrc ? (
+            <img src={previewSrc} alt="preview" style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
+          ) : (
+            <div style={{ color:'var(--muted)', textAlign:'center' }}>
+              <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
+              <div style={{ fontFamily:'Share Tech Mono', fontSize:11 }}>SEM SINAL</div>
+            </div>
+          )}
+          <div className="mono" style={{ position:'absolute', top:10, right:12, background:'rgba(0,0,0,0.7)', padding:'3px 8px', fontSize:12, color:'var(--accent2)', borderRadius:2 }}>
+            {fmt(currentTime)}
+          </div>
+        </div>
+      </div>
+
+      {/* ── TIMELINE ── */}
+      <div style={{ height:220, background:'var(--surface)', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', flexShrink:0 }}>
+
+        {/* controles */}
+        <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', gap:8, background:'var(--bg)' }}>
+          <button className="btn btn-ghost" style={{ padding:'4px 8px' }} onClick={() => { setIsPlaying(false); setCurrentTime(0); }}>⏮</button>
+          <button className="btn btn-ghost" style={{ padding:'4px 10px' }} onClick={() => setIsPlaying(p => !p)}>
+            {isPlaying ? '⏸' : '▶'}
+          </button>
+          {selectedClip && selectedClip.trackId === 'video-1' && (
+            <>
+              <div style={{ width:1, height:20, background:'var(--border)', margin:'0 4px' }}/>
+              <select value={selectedClip.transition} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,transition:e.target.value}:c))}
+                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
+                <option value="none">Sem transição</option>
+                <option value="fade">Fade</option>
+                <option value="zoom">Zoom</option>
+              </select>
+              <select value={selectedClip.effect} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,effect:e.target.value}:c))}
+                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
+                <option value="none">Sem efeito</option>
+                <option value="kenburns">Ken Burns</option>
+              </select>
+            </>
+          )}
+          <button className="btn btn-danger" style={{ padding:'4px 8px', marginLeft:'auto' }} disabled={!selectedId}
+            onClick={() => { setClips(p => p.filter(c => c.id !== selectedId)); setSelectedId(null); }}>
+            🗑
+          </button>
+        </div>
+
+        {/* trilhas */}
+        <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+          {/* labels */}
+          <div style={{ width:150, flexShrink:0, borderRight:'1px solid var(--border)' }}>
+            <div style={{ height:22, borderBottom:'1px solid var(--border)', background:'var(--bg)' }}/>
+            {TRACKS.map(t => (
+              <div key={t.id} className="track-row" style={{ display:'flex', alignItems:'center', paddingLeft:10, background:t.color }}>
+                <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:0.5, color:'var(--muted)' }}>{t.name}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* área de clips */}
+          <div style={{ flex:1, overflowX:'auto', position:'relative', userSelect:'none' }} ref={timelineRef}
+               onClick={e => {
+                 if (dragState) return;
+                 const rect = timelineRef.current.getBoundingClientRect();
+                 setCurrentTime(Math.max(0, (e.clientX - rect.left + timelineRef.current.scrollLeft) / PPS));
+                 setSelectedId(null);
+               }}>
+            <div style={{ position:'relative', width: Math.max(duration * PPS, 1200), height:'100%' }}>
+              {/* régua */}
+              <div style={{ height:22, background:'var(--bg)', borderBottom:'1px solid var(--border)', position:'relative' }}>
+                {Array.from({ length: Math.ceil(duration) }).map((_,i) => (
+                  <div key={i} style={{ position:'absolute', left: i * PPS, height:'100%', borderLeft:'1px solid var(--border)', paddingLeft:3 }}>
+                    {i % 5 === 0 && <span className="mono" style={{ fontSize:9, color:'var(--muted)' }}>{i}s</span>}
+                  </div>
+                ))}
+              </div>
+
+              {/* trilhas */}
+              {TRACKS.map(track => (
+                <div key={track.id} className="track-row" style={{ background: track.color }}>
+                  {clips.filter(c => c.trackId === track.id).map(clip => {
+                    const isSelected = clip.id === selectedId;
+                    return (
+                      <div key={clip.id}
+                           onMouseDown={e => onClipMouseDown(e, clip.id, 'move')}
+                           style={{
+                             position:'absolute', top:3, bottom:3,
+                             left: clip.startTime * PPS,
+                             width: Math.max(clip.duration * PPS, 10),
+                             background: isSelected ? 'rgba(45,107,228,0.5)' : 'rgba(45,107,228,0.2)',
+                             border: `1px solid ${isSelected ? 'var(--accent2)' : 'var(--accent)'}`,
+                             borderRadius:2, cursor:'grab', overflow:'hidden',
+                             boxShadow: isSelected ? '0 0 10px rgba(0,212,255,0.3)' : 'none',
+                           }}>
+                        {/* resize left */}
+                        <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-left'); }}
+                             style={{ position:'absolute', left:0, top:0, bottom:0, width:6, cursor:'w-resize', background:'rgba(0,212,255,0.2)' }}/>
+                        <div style={{ padding:'2px 8px', fontSize:10, color:'var(--text)', fontFamily:'Rajdhani', whiteSpace:'nowrap', overflow:'hidden' }}>
+                          {library.find(m => m.id === clip.mediaId)?.name || '—'}
+                        </div>
+                        {/* resize right */}
+                        <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-right'); }}
+                             style={{ position:'absolute', right:0, top:0, bottom:0, width:6, cursor:'e-resize', background:'rgba(0,212,255,0.2)' }}/>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+
+              {/* playhead */}
+              <div style={{ position:'absolute', top:0, bottom:0, left: currentTime * PPS, width:1, background:'var(--danger)', zIndex:20, pointerEvents:'none' }}>
+                <div style={{ width:8, height:8, background:'var(--danger)', transform:'translateX(-3.5px) rotate(45deg)', marginTop:16 }}/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════
+           MODAL: ENVIAR AO MOTOR
+      ══════════════════════════════════════════════════════════════════ */}
+      {modal === 'ai' && (
+        <div className="modal-overlay" onClick={() => !aiStatus.running && setModal(null)}>
+          <div className="modal animate-fade" onClick={e => e.stopPropagation()} style={{ maxWidth:520 }}>
+            <div className="modal-header">
+              <span className="modal-title">✦ Enviar ao Motor de Dobra</span>
+              {!aiStatus.running && <button className="btn btn-ghost" style={{ padding:'2px 6px' }} onClick={() => setModal(null)}>✕</button>}
+            </div>
+            <div className="modal-body">
+
+              {!driveReady && (
+                <div style={{ color:'var(--danger)', fontSize:13, marginBottom:14, padding:'8px 12px', background:'rgba(224,64,64,0.1)', borderRadius:3, border:'1px solid rgba(224,64,64,0.3)' }}>
+                  ⚠ Drive ainda não conectado. Aguarde...
+                </div>
+              )}
+
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
+                {/* áudio */}
+                <label className={`upload-slot ${aiFiles.audio ? 'done' : ''}`}>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.audio ? 'var(--success)' : 'var(--muted)' }}>🎙</div>
+                  <div className="upload-slot-info">
+                    <div className="upload-slot-label">NARRAÇÃO *</div>
+                    <div className="upload-slot-name">{aiFiles.audio?.name || 'audio.mp3 / .wav'}</div>
+                  </div>
+                  <input type="file" accept="audio/*" style={{ display:'none' }} onChange={e => handleFiles(e,'audio')}/>
+                </label>
+
+                {/* roteiro */}
+                <label className={`upload-slot ${aiFiles.roteiro ? 'done' : ''}`}>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.roteiro ? 'var(--success)' : 'var(--muted)' }}>📄</div>
+                  <div className="upload-slot-info">
+                    <div className="upload-slot-label">ROTEIRO *</div>
+                    <div className="upload-slot-name">{aiFiles.roteiro?.name || 'roteiro.txt'}</div>
+                  </div>
+                  <input type="file" accept=".txt" style={{ display:'none' }} onChange={e => handleFiles(e,'roteiro')}/>
+                </label>
+
+                {/* imagens */}
+                <label className={`upload-slot ${aiFiles.images.length > 0 ? 'done' : ''}`}>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.images.length > 0 ? 'var(--success)' : 'var(--muted)' }}>🖼️</div>
+                  <div className="upload-slot-info">
+                    <div className="upload-slot-label">IMAGENS *</div>
+                    <div className="upload-slot-name">{aiFiles.images.length > 0 ? `${aiFiles.images.length} imagens` : 'Selecionar todas'}</div>
+                  </div>
+                  <input type="file" multiple accept="image/*" style={{ display:'none' }} onChange={e => handleFiles(e,'images')}/>
+                </label>
+
+                {/* bgm */}
+                <label className={`upload-slot ${aiFiles.bgm ? 'done' : ''}`}>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.bgm ? 'var(--success)' : 'var(--muted)' }}>🎵</div>
+                  <div className="upload-slot-info">
+                    <div className="upload-slot-label">MÚSICA DE FUNDO</div>
+                    <div className="upload-slot-name">{aiFiles.bgm?.name || 'Opcional'}</div>
+                  </div>
+                  <input type="file" accept="audio/*" style={{ display:'none' }} onChange={e => handleFiles(e,'bgm')}/>
+                </label>
+              </div>
+
+              {/* aviso sobre o Motor */}
+              <div style={{ padding:'10px 12px', background:'rgba(45,107,228,0.08)', border:'1px solid rgba(45,107,228,0.2)', borderRadius:3, fontSize:12, color:'var(--muted)', marginBottom:14, lineHeight:1.6 }}>
+                <strong style={{ color:'var(--accent2)' }}>Como funciona:</strong> Os arquivos serão enviados ao Google Drive na pasta <span className="mono" style={{ color:'var(--text)' }}>MotorDobra/fila/</span>. Com o Motor de Dobra 3.0 rodando no Colab, ele processará o job automaticamente e devolverá a timeline sincronizada.
+              </div>
+
+              {aiStatus.running && (
+                <div style={{ marginBottom:14 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6, fontSize:12 }}>
+                    <span style={{ color:'var(--text)' }}>{aiStatus.msg}</span>
+                    <span className="mono" style={{ color:'var(--accent2)' }}>{Math.round(aiStatus.pct)}%</span>
+                  </div>
+                  <div className="progress-bar"><div className="progress-fill" style={{ width:`${aiStatus.pct}%` }}/></div>
+                </div>
+              )}
+
+              {aiStatus.error && (
+                <div style={{ color:'var(--danger)', fontSize:12, marginBottom:10 }}>{aiStatus.error}</div>
+              )}
+
+              {aiStatus.step === 'aguardando' && (
+                <div style={{ color:'var(--success)', fontSize:12, marginBottom:10 }}>
+                  ✅ Job enviado com sucesso! Acompanhe o progresso em "📡 Jobs".
+                </div>
+              )}
+
+              <div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
+                <button className="btn btn-ghost" onClick={() => setModal(null)} disabled={aiStatus.running}>Cancelar</button>
+                <button className="btn btn-gold"
+                  disabled={!driveReady || !aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0 || aiStatus.running}
+                  onClick={enviaJob}>
+                  {aiStatus.running ? '⟳ Enviando...' : '✦ Enviar ao Motor'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+           MODAL: JOBS
+      ══════════════════════════════════════════════════════════════════ */}
+      {modal === 'jobs' && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal animate-fade" onClick={e => e.stopPropagation()} style={{ maxWidth:600 }}>
+            <div className="modal-header">
+              <span className="modal-title">📡 Jobs no Drive</span>
+              <button className="btn btn-ghost" style={{ padding:'2px 6px' }} onClick={() => setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body">
+              {jobs.length === 0 && (
+                <div style={{ color:'var(--muted)', textAlign:'center', padding:24, fontSize:13 }}>
+                  Nenhum job encontrado.<br/>
+                  <span style={{ fontSize:11 }}>Envie arquivos ao Motor para começar.</span>
+                </div>
+              )}
+              {jobs.map(job => {
+                const colors = { fila:'var(--muted)', processando:'var(--gold)', concluido:'var(--success)', erro:'var(--danger)' };
+                const icons  = { fila:'⏳', processando:'⚙️', concluido:'✅', erro:'❌' };
+                return (
+                  <div key={job.id} style={{
+                    display:'flex', alignItems:'center', gap:12, padding:'10px 12px',
+                    background:'var(--bg)', border:'1px solid var(--border)', borderRadius:3, marginBottom:8,
+                  }}>
+                    <span style={{ fontSize:18 }}>{icons[job.status]}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontFamily:'Share Tech Mono', fontSize:12, color:'var(--text)' }}>{job.name}</div>
+                      <div style={{ fontSize:11, color: colors[job.status], marginTop:2, fontFamily:'Rajdhani', letterSpacing:0.5 }}>
+                        {job.status.toUpperCase()}
+                      </div>
+                    </div>
+                    {job.status === 'concluido' && (
+                      <button className="btn btn-primary" style={{ fontSize:11, padding:'4px 10px' }}
+                        onClick={() => { importaTimeline(job.id, job.name); setModal(null); }}>
+                        ⬇ Importar Timeline
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+              <p style={{ fontSize:11, color:'var(--muted)', marginTop:8 }}>
+                Atualiza automaticamente a cada 12 segundos. Pastas no Drive: <span className="mono">MotorDobra/fila · processando · concluido · erro</span>
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════
+           MODAL: EXPORTAR
+      ══════════════════════════════════════════════════════════════════ */}
+      {modal === 'export' && (
+        <div className="modal-overlay" onClick={() => setModal(null)}>
+          <div className="modal animate-fade" onClick={e => e.stopPropagation()} style={{ maxWidth:420 }}>
+            <div className="modal-header">
+              <span className="modal-title">⬇ Exportar</span>
+              <button className="btn btn-ghost" style={{ padding:'2px 6px' }} onClick={() => setModal(null)}>✕</button>
+            </div>
+            <div className="modal-body" style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <p style={{ fontSize:12, color:'var(--muted)', marginBottom:4 }}>
+                Escolha como exportar o projeto atual.
+              </p>
+              <button className="btn btn-ghost" style={{ justifyContent:'center', padding:'10px' }}
+                onClick={() => {
+                  const data = { clips, library: library.map(m => ({ ...m, url: undefined })), duration };
+                  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+                  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+                  a.download = 'projeto_cronicas.json'; a.click();
+                }}>
+                💾 Salvar Projeto (.JSON)
+              </button>
+              <button className="btn btn-primary" style={{ justifyContent:'center', padding:'10px' }}
+                onClick={() => { alert('Para renderizar no Colab, envie o projeto via "✦ Enviar ao Motor" com tipo "render".'); setModal(null); }}>
+                🚀 Renderizar no Colab (Motor de Dobra)
+              </button>
+              <button className="btn btn-ghost" style={{ justifyContent:'center', padding:'10px' }}
+                onClick={() => { alert('Renderização local via FFmpeg WASM — em desenvolvimento para a próxima sessão!'); }}>
+                💻 Renderizar no Navegador (FFmpeg)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
