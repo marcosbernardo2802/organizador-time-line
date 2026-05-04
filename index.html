@@ -647,6 +647,99 @@ function App() {
     } else setPreviewSrc(null);
   }, [currentTime, clips, library]);
 
+  // ── SALVAR / CARREGAR PROJETO LOCAL ────────────────────────────────────────
+  const salvaProjetoLocal = () => {
+    try {
+      // Salva tudo exceto as URLs de blob (não são serializáveis)
+      const projeto = {
+        versao:   '3.0',
+        salvo_em: new Date().toISOString(),
+        duration,
+        clips,
+        // Salva nome, tipo e duração — mas não a URL (blob não persiste)
+        library:  library.map(m => ({
+          id:       m.id,
+          name:     m.name,
+          type:     m.type,
+          duration: m.duration,
+          placeholder: true, // marca para recarregar depois
+        })),
+      };
+      localStorage.setItem('cronicas_projeto', JSON.stringify(projeto));
+      localStorage.setItem('cronicas_salvo_em', new Date().toLocaleString('pt-BR'));
+      alert('✅ Projeto salvo localmente!\nDa próxima vez clique em "Carregar Projeto" para restaurar a timeline.');
+    } catch(e) {
+      alert('Erro ao salvar: ' + e.message);
+    }
+  };
+
+  const carregaProjetoLocal = () => {
+    try {
+      const raw = localStorage.getItem('cronicas_projeto');
+      if (!raw) { alert('Nenhum projeto salvo encontrado.'); return; }
+      const projeto = JSON.parse(raw);
+      const salvoEm = localStorage.getItem('cronicas_salvo_em') || '?';
+
+      if (!confirm(`Carregar projeto salvo em ${salvoEm}?\n\n⚠️ Isso vai substituir a timeline atual.\nAs imagens precisarão ser recarregadas pelo "+".`)) return;
+
+      setClips(projeto.clips || []);
+      setLibrary(projeto.library || []);
+      setDuration(projeto.duration || 60);
+      setCurrentTime(0);
+
+      const semUrl = (projeto.library || []).filter(m => m.placeholder).length;
+      if (semUrl > 0) {
+        alert(`✅ Timeline restaurada! ${projeto.clips?.length || 0} clips carregados.\n\n⚠️ ${semUrl} mídias precisam ser recarregadas.\nClique em "+" na biblioteca e selecione as imagens/áudio novamente — a timeline vai reconectá-los automaticamente pelo nome.`);
+      } else {
+        alert(`✅ Projeto restaurado com sucesso!`);
+      }
+    } catch(e) {
+      alert('Erro ao carregar: ' + e.message);
+    }
+  };
+
+  // Verifica se tem projeto salvo ao iniciar
+  const [temProjetoSalvo, setTemProjetoSalvo] = useState(false);
+  useEffect(() => {
+    const raw = localStorage.getItem('cronicas_projeto');
+    setTemProjetoSalvo(!!raw);
+  }, []);
+
+  // Auto-save a cada 2 minutos
+  useEffect(() => {
+    if (clips.length === 0) return;
+    const interval = setInterval(() => {
+      try {
+        const projeto = {
+          versao: '3.0',
+          salvo_em: new Date().toISOString(),
+          duration, clips,
+          library: library.map(m => ({ id: m.id, name: m.name, type: m.type, duration: m.duration, placeholder: true })),
+        };
+        localStorage.setItem('cronicas_projeto', JSON.stringify(projeto));
+        localStorage.setItem('cronicas_salvo_em', new Date().toLocaleString('pt-BR'));
+        setTemProjetoSalvo(true);
+        console.log('[auto-save] Projeto salvo automaticamente');
+      } catch(e) {}
+    }, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [clips, library, duration]);
+
+  // Reconecta mídias da biblioteca pelo nome quando novas mídias são carregadas
+  useEffect(() => {
+    if (library.length === 0) return;
+    setClips(prevClips => prevClips.map(clip => {
+      // Se o clip já tem mídia com URL válida, não muda
+      const currentMedia = library.find(m => m.id === clip.mediaId);
+      if (currentMedia?.url) return clip;
+      // Tenta reconectar pelo nome
+      const byName = library.find(m => m.url && !m.placeholder &&
+        m.name.toLowerCase() === (currentMedia?.name || '').toLowerCase());
+      if (byName) return { ...clip, mediaId: byName.id };
+      return clip;
+    }));
+  }, [library]);
+
   // ── FILE INPUT HELPER ───────────────────────────────────────────────────────
   const handleFiles = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -748,6 +841,13 @@ function App() {
               {userInfo.email}
             </span>
           )}
+          <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={carregaProjetoLocal}
+            title={temProjetoSalvo ? `Projeto salvo: ${localStorage.getItem('cronicas_salvo_em')||''}` : 'Nenhum projeto salvo'}>
+            {temProjetoSalvo ? '📂 Carregar' : '📂'}
+          </button>
+          <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={salvaProjetoLocal}>
+            💾 Salvar
+          </button>
           <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={() => setModal('jobs')}>
             📡 Jobs ({jobs.length})
           </button>
@@ -770,6 +870,7 @@ function App() {
             <label style={{ cursor:'pointer', color:'var(--accent)', fontSize:12 }} title="Importar mídia">
               +
               <input type="file" multiple accept="video/*,image/*,audio/*" style={{ display:'none' }} onChange={async (e) => {
+                const newMedias = [];
                 for (const f of Array.from(e.target.files)) {
                   const url = URL.createObjectURL(f);
                   const dur = await new Promise(res => {
@@ -778,8 +879,24 @@ function App() {
                     m.onloadedmetadata = () => res(m.duration);
                     m.src = url;
                   });
-                  setLibrary(prev => [...prev, { id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur }]);
+                  newMedias.push({ id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur });
                 }
+                setLibrary(prev => {
+                  // Remove placeholders com mesmo nome e adiciona versão com URL
+                  const semPlaceholder = prev.filter(m => {
+                    if (!m.placeholder) return true;
+                    return !newMedias.find(n => n.name.toLowerCase() === m.name.toLowerCase());
+                  });
+                  // Reconecta clips que usavam o placeholder
+                  setClips(prevClips => prevClips.map(clip => {
+                    const placeholder = prev.find(m => m.placeholder && m.id === clip.mediaId);
+                    if (!placeholder) return clip;
+                    const nova = newMedias.find(n => n.name.toLowerCase() === placeholder.name.toLowerCase());
+                    if (nova) return { ...clip, mediaId: nova.id };
+                    return clip;
+                  }));
+                  return [...semPlaceholder, ...newMedias];
+                });
               }}/>
             </label>
           </div>
