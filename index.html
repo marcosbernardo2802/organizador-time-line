@@ -1327,3 +1327,165 @@ function App() {
                         if (file) await driveApi.uploadFile(jobId, file, `bgm.${ext}`);
                       }
                     }
+
+                    
+                    // Envia timeline.json com os tempos e efeitos atuais
+                    const tlData = {
+                      tipo: 'render',
+                      duracao_total: duration,
+                      cenas: videoClips.map((clip, i) => {
+                        const media = library.find(m => m.id === clip.mediaId);
+                        return {
+                          id_cena:    String(i+1).padStart(4,'0'),
+                          arquivo:    media?.name || `${String(i+1).padStart(4,'0')}.jpg`,
+                          start:      clip.startTime,
+                          end:        clip.startTime + clip.duration,
+                          duration:   clip.duration,
+                          transition: clip.transition || 'none',
+                          effect:     clip.effect || 'none',
+                        };
+                      }),
+                      audio: narClip ? ('audio.' + (library.find(m=>m.id===narClip.mediaId)?.name||'audio.mp3').split('.').pop()) : null,
+                      bgm:   bgmClip ? ('bgm.'   + (library.find(m=>m.id===bgmClip.mediaId)?.name||'bgm.mp3').split('.').pop())   : null,
+                    };
+                    await driveApi.uploadJson(jobId, 'timeline_render.json', tlData);
+
+                    await driveApi.uploadJson(jobId, 'job.json', {
+                      tipo: 'render',
+                      audio: tlData.audio,
+                      roteiro: null,
+                      timeline_pronta: 'timeline_render.json',
+                      criado_em: new Date().toISOString(),
+                    });
+
+                    setModal(null);
+                    alert('✅ Job de render enviado ao Motor de Dobra!\nAcompanhe em "📡 Jobs".');
+                  } catch(e) {
+                    alert('Erro ao enviar job: ' + e.message);
+                  }
+                }}>
+                🚀 Renderizar no Colab (Motor de Dobra)
+              </button>
+
+              {/* Renderizar no Navegador FFmpeg */}
+              <button className="btn btn-ghost" style={{ justifyContent:'center', padding:'10px' }}
+                disabled={renderState.isRendering}
+                onClick={async () => {
+                  const videoClips = clips.filter(c => c.trackId === 'video-1').sort((a,b) => a.startTime - b.startTime);
+                  const narClip    = clips.find(c => c.trackId === 'audio-1');
+                  if (videoClips.length === 0) { alert('Nenhuma imagem na timeline.'); return; }
+
+                  setRenderState({ isRendering: true, progress: 0, status: 'Carregando FFmpeg...' });
+                  let ffmpeg = null;
+                  try {
+                    const { FFmpeg } = await import('https://esm.sh/@ffmpeg/ffmpeg@0.12.10');
+                    ffmpeg = new FFmpeg();
+                    const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+                    const fb   = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+
+                    setRenderState(p => ({ ...p, status: 'Baixando motor FFmpeg...' }));
+                    const [coreURL, wasmURL] = await Promise.all([
+                      fetch(`${base}/ffmpeg-core.js`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
+                      fetch(`${base}/ffmpeg-core.wasm`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
+                    ]);
+                    const workerText = await fetch(`${fb}/worker.js`).then(r=>r.text());
+                    const workerURL  = URL.createObjectURL(new Blob([workerText],{type:'text/javascript'}));
+
+                    await ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL });
+
+                    ffmpeg.on('log', ({ message }) => {
+                      const m = message.match(/time=(\d{2}):(\d{2}):(\d{2})/);
+                      if (m) {
+                        const t = parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]);
+                        setRenderState(p => ({ ...p, progress: Math.min(99, Math.round(t/duration*100)), status: `Renderizando: ${Math.min(99,Math.round(t/duration*100))}%` }));
+                      }
+                    });
+
+                    let listTxt = '';
+                    for (let i = 0; i < videoClips.length; i++) {
+                      const clip  = videoClips[i];
+                      const media = library.find(m => m.id === clip.mediaId);
+                      if (!media?.url) continue;
+                      setRenderState(p => ({ ...p, status: `Preparando imagem ${i+1}/${videoClips.length}...` }));
+                      const ext   = media.name.split('.').pop() || 'jpg';
+                      const fname = `img${i}.${ext}`;
+                      const cached = fileCache.current[media.name];
+                      const buf   = cached ? await cached.arrayBuffer() : await fetch(media.url).then(r=>r.arrayBuffer());
+                      await ffmpeg.writeFile(fname, new Uint8Array(buf));
+                      const next = videoClips[i+1];
+                      const dur  = next ? (next.startTime - clip.startTime) : (duration - clip.startTime);
+                      listTxt += `file '${fname}'\nduration ${Math.max(0.1, dur).toFixed(3)}\n`;
+                    }
+                    const lastClip  = videoClips[videoClips.length-1];
+                    const lastMedia = library.find(m => m.id === lastClip.mediaId);
+                    if (lastMedia?.url) {
+                      const ext = lastMedia.name.split('.').pop() || 'jpg';
+                      listTxt += `file 'img${videoClips.length-1}.${ext}'\n`;
+                    }
+                    await ffmpeg.writeFile('list.txt', new TextEncoder().encode(listTxt));
+
+                    let cmd = ['-f','concat','-safe','0','-i','list.txt'];
+                    let filterParts = [];
+
+                    if (narClip) {
+                      const narMedia = library.find(m => m.id === narClip.mediaId);
+                      if (narMedia) {
+                        const cached = fileCache.current[narMedia.name];
+                        const buf = cached ? await cached.arrayBuffer() : await fetch(narMedia.url).then(r=>r.arrayBuffer());
+                        await ffmpeg.writeFile('narration.mp3', new Uint8Array(buf));
+                        cmd.push('-i','narration.mp3');
+                        filterParts.push(`[1:a]volume=1.0[a1]`);
+                      }
+                    }
+
+                    cmd.push('-vf','scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p');
+                    cmd.push('-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-r','24');
+
+                    if (filterParts.length > 0) {
+                      cmd.push('-filter_complex', filterParts.join(';'));
+                      cmd.push('-map','0:v','-map','[a1]','-c:a','aac','-shortest');
+                    }
+                    cmd.push('saida.mp4');
+
+                    setRenderState(p => ({ ...p, status: 'Renderizando vídeo...' }));
+                    await ffmpeg.exec(cmd);
+
+                    const data = await ffmpeg.readFile('saida.mp4');
+                    const url  = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
+                    const a    = document.createElement('a');
+                    a.href = url; a.download = 'cronicas_estelares.mp4'; a.click();
+
+                    setRenderState({ isRendering: false, progress: 100, status: '✅ Download iniciado!' });
+                    setTimeout(() => setModal(null), 2000);
+                  } catch(e) {
+                    setRenderState({ isRendering: false, progress: 0, status: `Erro: ${e.message}` });
+                  } finally {
+                    try { ffmpeg?.terminate(); } catch {}
+                  }
+                }}>
+                {renderState.isRendering ? `⏳ ${renderState.status}` : '💻 Renderizar no Navegador (FFmpeg)'}
+              </button>
+
+              {renderState.isRendering && (
+                <div>
+                  <div className="progress-bar" style={{ marginTop:4 }}>
+                    <div className="progress-fill" style={{ width:`${renderState.progress}%` }}/>
+                  </div>
+                  <div style={{ fontSize:11, color:'var(--muted)', marginTop:4, textAlign:'center' }}>
+                    {renderState.progress}% — {renderState.status}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
