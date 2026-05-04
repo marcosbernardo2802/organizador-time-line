@@ -336,9 +336,11 @@ function App() {
   const [selectedId,  setSelectedId]  = useState(null);
   const [dragState,   setDragState]   = useState(null);
 
-  const timelineRef = useRef(null);
-  const animRef     = useRef(null);
-  const lastRef     = useRef(Date.now());
+  const timelineRef  = useRef(null);
+  const animRef      = useRef(null);
+  const lastRef      = useRef(Date.now());
+  const narrationRef = useRef(null);
+  const bgmRef       = useRef(null);
 
   // Preview
   const [previewSrc, setPreviewSrc] = useState(null);
@@ -568,6 +570,48 @@ function App() {
   const onMouseUp = () => { setDragState(null); };
 
   // ── PLAYBACK ────────────────────────────────────────────────────────────────
+  // Sync audio elements with playback state
+  useEffect(() => {
+    const narClip = clips.find(c => c.trackId === 'audio-1');
+    const bgmClip = clips.find(c => c.trackId === 'audio-2');
+    const narMedia = narClip ? library.find(m => m.id === narClip.mediaId) : null;
+    const bgmMedia = bgmClip ? library.find(m => m.id === bgmClip.mediaId) : null;
+
+    if (narrationRef.current) {
+      if (narMedia?.url) {
+        if (narrationRef.current.src !== narMedia.url) {
+          narrationRef.current.src = narMedia.url;
+          narrationRef.current.volume = 1.0;
+        }
+        const expTime = currentTime - (narClip?.startTime || 0);
+        if (Math.abs(narrationRef.current.currentTime - expTime) > 0.3) {
+          narrationRef.current.currentTime = Math.max(0, expTime);
+        }
+        if (isPlaying && narrationRef.current.paused) narrationRef.current.play().catch(()=>{});
+        if (!isPlaying && !narrationRef.current.paused) narrationRef.current.pause();
+      } else {
+        narrationRef.current.pause();
+      }
+    }
+
+    if (bgmRef.current) {
+      if (bgmMedia?.url) {
+        if (bgmRef.current.src !== bgmMedia.url) {
+          bgmRef.current.src = bgmMedia.url;
+          bgmRef.current.volume = 0.2;
+        }
+        const expTime = currentTime - (bgmClip?.startTime || 0);
+        if (Math.abs(bgmRef.current.currentTime - expTime) > 0.3) {
+          bgmRef.current.currentTime = Math.max(0, expTime);
+        }
+        if (isPlaying && bgmRef.current.paused) bgmRef.current.play().catch(()=>{});
+        if (!isPlaying && !bgmRef.current.paused) bgmRef.current.pause();
+      } else {
+        bgmRef.current.pause();
+      }
+    }
+  }, [isPlaying, currentTime, clips, library]);
+
   useEffect(() => {
     if (isPlaying) {
       const tick = () => {
@@ -575,7 +619,12 @@ function App() {
         const delta = (now - lastRef.current) / 1000;
         lastRef.current = now;
         setCurrentTime(t => {
-          if (t + delta >= duration) { setIsPlaying(false); return duration; }
+          if (t + delta >= duration) {
+            setIsPlaying(false);
+            if (narrationRef.current) narrationRef.current.pause();
+            if (bgmRef.current) bgmRef.current.pause();
+            return duration;
+          }
           return t + delta;
         });
         animRef.current = requestAnimationFrame(tick);
@@ -755,6 +804,10 @@ function App() {
           </div>
         </div>
 
+        {/* ── AUDIO ELEMENTS ── */}
+        <audio ref={narrationRef} style={{ display:'none' }} />
+        <audio ref={bgmRef}       style={{ display:'none' }} />
+
         {/* ── PREVIEW ── */}
         <div style={{ flex:1, background:'#000', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
           {previewSrc ? (
@@ -776,7 +829,7 @@ function App() {
 
         {/* controles */}
         <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', gap:8, background:'var(--bg)' }}>
-          <button className="btn btn-ghost" style={{ padding:'4px 8px' }} onClick={() => { setIsPlaying(false); setCurrentTime(0); }}>⏮</button>
+          <button className="btn btn-ghost" style={{ padding:'4px 8px' }} onClick={() => { setIsPlaying(false); setCurrentTime(0); if(narrationRef.current){narrationRef.current.pause();narrationRef.current.currentTime=0;} if(bgmRef.current){bgmRef.current.pause();bgmRef.current.currentTime=0;} }}>⏮</button>
           <button className="btn btn-ghost" style={{ padding:'4px 10px' }} onClick={() => setIsPlaying(p => !p)}>
             {isPlaying ? '⏸' : '▶'}
           </button>
