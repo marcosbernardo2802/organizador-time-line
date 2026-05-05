@@ -625,6 +625,12 @@ function App() {
         if (narrationRef.current.src !== narMedia.url) {
           narrationRef.current.src = narMedia.url;
           narrationRef.current.volume = 1.0;
+          // Para automaticamente quando o áudio terminar
+          narrationRef.current.onended = () => {
+            setIsPlaying(false);
+            setCurrentTime(0);
+            if (bgmRef.current) { bgmRef.current.pause(); bgmRef.current.currentTime = 0; }
+          };
         }
         const expTime = currentTime - (narClip?.startTime || 0);
         if (Math.abs(narrationRef.current.currentTime - expTime) > 0.3) {
