@@ -202,8 +202,19 @@
       0%   { transform: scale(1) translate(0,0); }
       100% { transform: scale(1.12) translate(-2%,-2%); }
     }
-
-    .animate-fade { animation: fadeIn 0.3s ease; }
+    @keyframes kenburns2 {
+      0%   { transform: scale(1.1) translate(2%,1%); }
+      100% { transform: scale(1) translate(0,0); }
+    }
+    @keyframes zoomIn {
+      from { transform: scale(1.08); opacity:0.7; }
+      to   { transform: scale(1); opacity:1; }
+    }
+    .animate-fade      { animation: fadeIn 0.3s ease; }
+    .effect-kenburns   { animation: kenburns 12s ease-out forwards; }
+    .effect-kenburns2  { animation: kenburns2 12s ease-in forwards; }
+    .transition-fade   { animation: fadeIn 0.6s ease-in-out; }
+    .transition-zoom   { animation: zoomIn 0.5s ease-out; }
   </style>
 </head>
 <body>
@@ -454,8 +465,32 @@ function App() {
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   // ── ENVIAR JOB PARA O MOTOR ─────────────────────────────────────────────────
+  // Autentica sob demanda — só quando realmente precisa do Drive
+  const autenticaSeNecessario = () => new Promise((resolve, reject) => {
+    if (authState === 'ok' && driveApi.token) { resolve(); return; }
+    setAuthState('loading');
+    tokenClientRef.current?.requestAccessToken({
+      prompt: driveApi.token ? '' : 'consent',
+      callback: async (resp) => {
+        if (resp.error) { setAuthState('error'); reject(new Error('Falha no login')); return; }
+        driveApi.token = resp.access_token;
+        setAuthState('ok');
+        try {
+          const r = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+            headers: { Authorization: `Bearer ${resp.access_token}` }
+          });
+          setUserInfo(await r.json());
+        } catch {}
+        if (!driveReady) await setupDriveFolders();
+        resolve();
+      }
+    });
+  });
+
   const enviaJob = async () => {
-    if (!driveReady || !aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0) return;
+    if (!aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0) return;
+    try { await autenticaSeNecessario(); } catch { return; }
+    if (!driveReady) return;
 
     setAiStatus({ step: 'upload', msg: 'Criando pasta do job...', pct: 5, running: true, error: '' });
 
@@ -963,40 +998,7 @@ function App() {
   const selectedClip = clips.find(c => c.id === selectedId);
 
   // ── RENDER ──────────────────────────────────────────────────────────────────
-  if (authState !== 'ok') {
-    return (
-      <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'100vh', gap:24 }}>
-        {/* Logo / título */}
-        <div style={{ textAlign:'center', marginBottom:8 }}>
-          <div style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:6, color:'var(--muted)', marginBottom:6 }}>SISTEMA DE EDIÇÃO</div>
-          <h1 style={{ fontFamily:'Rajdhani', fontSize:36, fontWeight:700, letterSpacing:3, color:'var(--accent2)', lineHeight:1 }}>CRÔNICAS ESTELARES</h1>
-          <div style={{ fontFamily:'Share Tech Mono', fontSize:11, color:'var(--muted)', marginTop:6 }}>Motor de Dobra · v3.0</div>
-        </div>
-
-        <div className="hud-box" style={{ padding:'32px 40px', textAlign:'center', maxWidth:360, width:'100%' }}>
-          <div style={{ marginBottom:20 }}>
-            <div style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:2, color:'var(--muted)', marginBottom:4 }}>AUTENTICAÇÃO NECESSÁRIA</div>
-            <p style={{ fontSize:13, color:'var(--muted)', lineHeight:1.6 }}>
-              Conecte sua conta Google para acessar o Drive e enviar projetos ao Motor de Dobra.
-            </p>
-          </div>
-
-          {authState === 'error' && (
-            <div style={{ color:'var(--danger)', fontSize:12, marginBottom:12 }}>Falha na autenticação. Tente novamente.</div>
-          )}
-
-          <button
-            className="btn btn-primary"
-            onClick={handleLogin}
-            disabled={authState === 'loading'}
-            style={{ width:'100%', justifyContent:'center', padding:'10px 0', fontSize:14 }}
-          >
-            {authState === 'loading' ? '⟳ Conectando...' : '🔑 Entrar com Google'}
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Sem tela de login — app carrega direto
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}
@@ -1021,11 +1023,17 @@ function App() {
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          {userInfo && (
+          {userInfo ? (
             <span style={{ fontSize:11, color:'#7090b0', fontFamily:'Share Tech Mono' }}
               title="Atalhos: Espaço=Play/Pause | Delete=Remover | F=Tela Cheia | Home=Início | ←→=Navegar | Ctrl+/- =Zoom">
               {userInfo.email} · ⌨️
             </span>
+          ) : (
+            <button className="btn btn-ghost" style={{ fontSize:11 }}
+              onClick={() => autenticaSeNecessario().catch(()=>{})}
+              title="Conectar ao Google Drive">
+              {authState === 'loading' ? '⟳' : '🔑'} {authState === 'loading' ? 'Conectando...' : 'Drive'}
+            </button>
           )}
           <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={carregaProjetoLocal}
             title={temProjetoSalvo ? `Projeto salvo: ${localStorage.getItem('cronicas_salvo_em')||''}` : 'Nenhum projeto salvo'}>
@@ -1034,7 +1042,11 @@ function App() {
           <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={salvaProjetoLocal}>
             💾 Salvar
           </button>
-          <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={() => setModal('jobs')}>
+          <button className="btn btn-ghost" style={{ fontSize:11 }}
+            onClick={async () => {
+              if (authState !== 'ok') { try { await autenticaSeNecessario(); } catch { return; } }
+              setModal('jobs');
+            }}>
             📡 Jobs ({jobs.length})
           </button>
           <button className="btn btn-gold" onClick={() => setModal('ai')}>
@@ -1118,7 +1130,19 @@ function App() {
         {/* ── PREVIEW ── */}
         <div ref={previewRef} style={{ flex:1, background:'#000', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
           {previewSrc ? (
-            <img src={previewSrc} alt="preview" style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
+            (() => {
+              const activeClip  = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
+              const effect      = activeClip?.effect || 'none';
+              const transition  = activeClip?.transition || 'none';
+              const effectClass = effect === 'kenburns' ? (Math.floor(activeClip.startTime) % 2 === 0 ? 'effect-kenburns' : 'effect-kenburns2') : '';
+              const transClass  = transition === 'fade' ? 'transition-fade' : transition === 'zoom' ? 'transition-zoom' : '';
+              return (
+                <img key={activeClip?.id}
+                  src={previewSrc} alt="preview"
+                  className={`${effectClass} ${transClass}`}
+                  style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
+              );
+            })()
           ) : (
             <div style={{ color:'var(--muted)', textAlign:'center' }}>
               <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
@@ -1172,6 +1196,11 @@ function App() {
                 <option value="none">Sem efeito</option>
                 <option value="kenburns">Ken Burns</option>
               </select>
+              <button className="btn btn-ghost" style={{ fontSize:10, padding:'2px 6px' }}
+                title="Aplicar Ken Burns em TODAS as imagens"
+                onClick={() => setClips(p => p.map(c => c.trackId === 'video-1' ? {...c, effect:'kenburns'} : c))}>
+                ✦ Todas
+              </button>
             </>
           )}
           <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto' }}>
@@ -1243,6 +1272,14 @@ function App() {
                 <div key={track.id} className="track-row" style={{ background: track.color }}>
                   {clips.filter(c => c.trackId === track.id).map(clip => {
                     const isSelected = clip.id === selectedId;
+                    const isAudio    = track.type === 'audio';
+                    const clipMedia  = library.find(m => m.id === clip.mediaId);
+                    const bgColor    = isSelected
+                      ? (isAudio ? 'rgba(0,200,117,0.4)' : 'rgba(45,107,228,0.5)')
+                      : (isAudio ? 'rgba(0,200,117,0.15)' : 'rgba(45,107,228,0.2)');
+                    const borderColor = isSelected
+                      ? (isAudio ? '#00c875' : 'var(--accent2)')
+                      : (isAudio ? 'rgba(0,200,117,0.5)' : 'var(--accent)');
                     return (
                       <div key={clip.id}
                            onMouseDown={e => onClipMouseDown(e, clip.id, 'move')}
@@ -1250,17 +1287,43 @@ function App() {
                              position:'absolute', top:3, bottom:3,
                              left: clip.startTime * PPS * zoom,
                              width: Math.max(clip.duration * PPS * zoom, 10),
-                             background: isSelected ? 'rgba(45,107,228,0.5)' : 'rgba(45,107,228,0.2)',
-                             border: `1px solid ${isSelected ? 'var(--accent2)' : 'var(--accent)'}`,
+                             background: bgColor,
+                             border: `1px solid ${borderColor}`,
                              borderRadius:2, cursor:'grab', overflow:'hidden',
-                             boxShadow: isSelected ? '0 0 10px rgba(0,212,255,0.3)' : 'none',
+                             boxShadow: isSelected ? `0 0 10px ${isAudio ? 'rgba(0,200,117,0.3)' : 'rgba(0,212,255,0.3)'}` : 'none',
                            }}>
                         {/* resize left */}
                         <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-left'); }}
                              style={{ position:'absolute', left:0, top:0, bottom:0, width:6, cursor:'w-resize', background:'rgba(0,212,255,0.2)' }}/>
-                        <div style={{ padding:'2px 8px', fontSize:10, color:'#ffffff', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden' }}>
-                          {library.find(m => m.id === clip.mediaId)?.name || '—'}
-                        </div>
+                        {(() => {
+                          const media = library.find(m => m.id === clip.mediaId);
+                          const isAud = track.type === 'audio';
+                          return (
+                            <div style={{ display:'flex', alignItems:'center', height:'100%', overflow:'hidden', position:'relative' }}>
+                              {/* Waveform para áudio */}
+                              {isAud && (
+                                <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', gap:1, padding:'2px 4px', opacity:0.4 }}>
+                                  {Array.from({length: Math.min(80, Math.floor(clip.duration * PPS * zoom / 4))}).map((_,i) => (
+                                    <div key={i} style={{
+                                      width:2, flexShrink:0,
+                                      height: `${20 + Math.sin(i * 0.8) * 15 + Math.sin(i * 2.1) * 10 + Math.random() * 5}%`,
+                                      background: isSelected ? '#00c875' : 'rgba(0,200,117,0.8)',
+                                      borderRadius:1,
+                                    }}/>
+                                  ))}
+                                </div>
+                              )}
+                              {/* Thumbnail para imagens */}
+                              {!isAud && media?.url && media.type?.startsWith('image') && (
+                                <img src={media.url} alt=""
+                                  style={{ height:'100%', width:'auto', maxWidth:40, objectFit:'cover', opacity:0.8, flexShrink:0 }}/>
+                              )}
+                              <span style={{ padding:'2px 6px', fontSize:10, color:'#ffffff', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', position:'relative', zIndex:1, textShadow:'0 1px 3px rgba(0,0,0,0.8)' }}>
+                                {media?.name || '—'}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         {/* resize right */}
                         <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-right'); }}
                              style={{ position:'absolute', right:0, top:0, bottom:0, width:6, cursor:'e-resize', background:'rgba(0,212,255,0.2)' }}/>
@@ -1454,6 +1517,7 @@ function App() {
               {/* Renderizar no Colab */}
               <button className="btn btn-primary" style={{ justifyContent:'center', padding:'10px' }}
                 onClick={async () => {
+                  try { await autenticaSeNecessario(); } catch { return; }
                   if (!driveReady) { alert('Drive não conectado.'); return; }
                   const videoClips = clips.filter(c => c.trackId === 'video-1');
                   const narClip    = clips.find(c => c.trackId === 'audio-1');
