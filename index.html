@@ -631,19 +631,25 @@ function App() {
     setSelectedId(clipId);
   };
 
-  const snapToNearest = (time, excludeId, threshold = 0.5) => {
+  const snapToNearest = (time, excludeId) => {
     if (!snapOn) return time;
+    // Threshold em segundos proporcional ao zoom — mais zoom = snap mais preciso
+    const threshold = 1.5 / zoom;
     let best = time;
     let bestDist = threshold;
+
     clips.forEach(c => {
       if (c.id === excludeId) return;
+      // Testa início e fim de cada clip
       [c.startTime, c.startTime + c.duration].forEach(t => {
         const d = Math.abs(time - t);
         if (d < bestDist) { bestDist = d; best = t; }
       });
     });
-    // Snap to 0
+
+    // Snap ao início da timeline
     if (Math.abs(time) < bestDist) best = 0;
+
     return best;
   };
 
