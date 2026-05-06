@@ -55,21 +55,7 @@
       overflow: hidden;
     }
 
-    /* Scanline overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.03) 2px,
-        rgba(0,0,0,0.03) 4px
-      );
-      pointer-events: none;
-      z-index: 9999;
-    }
+
 
     #root { height: 100vh; display: flex; flex-direction: column; }
 
@@ -1418,11 +1404,7 @@ function App() {
             </div>
             <div className="modal-body">
 
-              {!driveReady && (
-                <div style={{ color:'var(--danger)', fontSize:13, marginBottom:14, padding:'8px 12px', background:'rgba(224,64,64,0.1)', borderRadius:3, border:'1px solid rgba(224,64,64,0.3)' }}>
-                  ⚠ Drive ainda não conectado. Aguarde...
-                </div>
-              )}
+
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
                 {/* áudio */}
