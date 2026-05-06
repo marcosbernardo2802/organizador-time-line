@@ -30,6 +30,23 @@
       --track-bgm: rgba(0,212,255,0.10);
     }
 
+    [data-theme="light"] {
+      --bg:        #f8fafc;
+      --surface:   #ffffff;
+      --panel:     #f1f5f9;
+      --border:    #94a3b8;
+      --accent:    #2563eb;
+      --accent2:   #0284c7;
+      --gold:      #d97706;
+      --text:      #0f172a;
+      --muted:     #475569;
+      --danger:    #dc2626;
+      --success:   #16a34a;
+      --track-vid: rgba(37,99,235,0.2);
+      --track-nar: rgba(22,163,74,0.2);
+      --track-bgm: rgba(14,165,233,0.2);
+    }
+
     body {
       background: var(--bg);
       color: var(--text);
@@ -38,28 +55,13 @@
       overflow: hidden;
     }
 
-    /* Scanline overlay */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0,0,0,0.03) 2px,
-        rgba(0,0,0,0.03) 4px
-      );
-      pointer-events: none;
-      z-index: 9999;
-    }
-
     #root { height: 100vh; display: flex; flex-direction: column; }
 
     /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: var(--surface); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
     /* ── Glow utilities ── */
     .glow-accent { box-shadow: 0 0 12px rgba(45,107,228,0.4); }
@@ -190,7 +192,7 @@
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
+      50%        { opacity: 0.4; }
     }
 
     @keyframes fadeIn {
@@ -346,6 +348,36 @@ function App() {
   const [selectedId,  setSelectedId]  = useState(null);
   const [dragState,   setDragState]   = useState(null);
 
+  // Histórico (Undo/Redo)
+  const [past, setPast] = useState([]);
+  const [future, setFuture] = useState([]);
+
+  const undo = useCallback(() => {
+    setPast(p => {
+      if (p.length === 0) return p;
+      const newPast = [...p];
+      const prevClips = newPast.pop();
+      setClips(currentClips => {
+        setFuture(f => [currentClips, ...f]);
+        return prevClips;
+      });
+      return newPast;
+    });
+  }, []);
+
+  const redo = useCallback(() => {
+    setFuture(f => {
+      if (f.length === 0) return f;
+      const newFuture = [...f];
+      const nextClips = newFuture.shift();
+      setClips(currentClips => {
+        setPast(p => [...p, currentClips]);
+        return nextClips;
+      });
+      return newFuture;
+    });
+  }, []);
+
   const timelineRef  = useRef(null);
   const animRef      = useRef(null);
   const lastRef      = useRef(Date.now());
@@ -361,6 +393,13 @@ function App() {
   const previewRef = useRef(null);
 
   const [renderState, setRenderState] = useState({ isRendering: false, progress: 0, status: '' });
+
+  // Tema Claro / Escuro
+  const [theme, setTheme] = useState(() => localStorage.getItem('cronicas_theme') || 'dark');
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('cronicas_theme', theme);
+  }, [theme]);
 
   // Preview
   const [previewSrc, setPreviewSrc] = useState(null);
@@ -643,6 +682,8 @@ function App() {
         return extraLibrary.length > 0 ? [...prevLib, ...extraLibrary] : prevLib;
       });
 
+      setPast([]);
+      setFuture([]);
       setClips(newClips);
       setDuration(tl.duracao_total + 10);
       setCurrentTime(0);
@@ -662,7 +703,7 @@ function App() {
   const onClipMouseDown = (e, clipId, type) => {
     e.stopPropagation();
     const clip = clips.find(c => c.id === clipId);
-    setDragState({ id: clipId, type, startX: e.clientX, origStart: clip.startTime, origDur: clip.duration });
+    setDragState({ id: clipId, type, startX: e.clientX, origStart: clip.startTime, origDur: clip.duration, origClips: clips });
     setSelectedId(clipId);
   };
 
@@ -711,7 +752,16 @@ function App() {
     }));
   };
 
-  const onMouseUp = () => { setDragState(null); };
+  const onMouseUp = () => {
+    if (dragState) {
+      const clip = clips.find(c => c.id === dragState.id);
+      if (clip && (clip.startTime !== dragState.origStart || clip.duration !== dragState.origDur)) {
+        setPast(p => [...p, dragState.origClips]);
+        setFuture([]);
+      }
+    }
+    setDragState(null);
+  };
 
   // ── PLAYBACK ────────────────────────────────────────────────────────────────
   // Sync audio elements with playback state
@@ -836,6 +886,8 @@ function App() {
 
       if (!confirm(`Carregar projeto salvo em ${salvoEm}?\n\n⚠️ Isso vai substituir a timeline atual.\nAs imagens precisarão ser recarregadas pelo "+".`)) return;
 
+      setPast([]);
+      setFuture([]);
       setClips(projeto.clips || []);
       setLibrary(projeto.library || []);
       setDuration(projeto.duration || 60);
@@ -886,6 +938,19 @@ function App() {
       if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
 
       switch(e.code) {
+        case 'KeyZ':
+          if (e.ctrlKey) {
+            e.preventDefault();
+            if (e.shiftKey) redo();
+            else undo();
+          }
+          break;
+        case 'KeyY':
+          if (e.ctrlKey) {
+            e.preventDefault();
+            redo();
+          }
+          break;
         case 'Space':
           e.preventDefault();
           setIsPlaying(p => !p);
@@ -893,6 +958,7 @@ function App() {
         case 'Delete':
         case 'Backspace':
           if (selectedId) {
+            setPast(p => [...p, clips]); setFuture([]);
             setClips(p => p.filter(c => c.id !== selectedId));
             setSelectedId(null);
           }
@@ -930,7 +996,7 @@ function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedId, duration]);
+  }, [selectedId, duration, clips, undo, redo]);
 
   // ── TELA CHEIA ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1015,16 +1081,21 @@ function App() {
           <span style={{ fontFamily:'Rajdhani', fontWeight:700, fontSize:15, letterSpacing:2, color:'var(--accent2)' }}>
             CRÔNICAS ESTELARES
           </span>
-          <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'#7090b0' }}>v3.0</span>
+          <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>v3.0</span>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:8 }}>
             <span className={`status-dot ${mStatus.dot}`}></span>
-            <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'#9ab8d4' }}>{mStatus.label}</span>
+            <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>{mStatus.label}</span>
           </div>
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button className="btn btn-ghost" style={{ fontSize:14, padding:'4px 8px' }} 
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            title="Alternar Tema Claro/Escuro">
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
           {userInfo ? (
-            <span style={{ fontSize:11, color:'#7090b0', fontFamily:'Share Tech Mono' }}
+            <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'Share Tech Mono' }}
               title="Atalhos: Espaço=Play/Pause | Delete=Remover | F=Tela Cheia | Home=Início | ←→=Navegar | Ctrl+/- =Zoom">
               {userInfo.email} · ⌨️
             </span>
@@ -1064,7 +1135,7 @@ function App() {
         {/* ── BIBLIOTECA ── */}
         <div className="hud-box" style={{ width:200, display:'flex', flexDirection:'column', borderRadius:0, borderTop:'none', borderLeft:'none', borderBottom:'none' }}>
           <div style={{ padding:'8px 10px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:1, color:'#9ab8d4' }}>BIBLIOTECA</span>
+            <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:1, color:'var(--muted)' }}>BIBLIOTECA</span>
             <label style={{ cursor:'pointer', color:'var(--accent)', fontSize:12 }} title="Importar mídia">
               +
               <input type="file" multiple accept="video/*,image/*,audio/*" style={{ display:'none' }} onChange={async (e) => {
@@ -1107,6 +1178,7 @@ function App() {
             )}
             {library.map(m => (
               <div key={m.id} onClick={() => {
+                setPast(p => [...p, clips]); setFuture([]);
                 const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
                 const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
                 setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, transition:'none', effect:'none' }]);
@@ -1117,7 +1189,7 @@ function App() {
                 marginBottom:4, cursor:'pointer', fontSize:11,
               }}>
                 <span>{m.type.startsWith('video') ? '🎬' : m.type.startsWith('audio') ? '🎵' : '🖼️'}</span>
-                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#d0e4f4' }}>{m.name}</span>
+                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>{m.name}</span>
               </div>
             ))}
           </div>
@@ -1128,29 +1200,60 @@ function App() {
         <audio ref={bgmRef}       style={{ display:'none' }} />
 
         {/* ── PREVIEW ── */}
-        <div ref={previewRef} style={{ flex:1, background:'#000', display:'flex', alignItems:'center', justifyContent:'center', position:'relative' }}>
-          {previewSrc ? (
-            (() => {
-              const activeClip  = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
-              const effect      = activeClip?.effect || 'none';
-              const transition  = activeClip?.transition || 'none';
-              const effectClass = effect === 'kenburns' ? (Math.floor(activeClip.startTime) % 2 === 0 ? 'effect-kenburns' : 'effect-kenburns2') : '';
-              const transClass  = transition === 'fade' ? 'transition-fade' : transition === 'zoom' ? 'transition-zoom' : '';
-              return (
-                <img key={activeClip?.id}
-                  src={previewSrc} alt="preview"
-                  className={`${effectClass} ${transClass}`}
-                  style={{ maxWidth:'100%', maxHeight:'100%', objectFit:'contain' }} />
-              );
-            })()
-          ) : (
-            <div style={{ color:'var(--muted)', textAlign:'center' }}>
-              <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
-              <div style={{ fontFamily:'Share Tech Mono', fontSize:11 }}>SEM SINAL</div>
+        <div ref={previewRef} style={{ 
+          flex: 1, 
+          background: 'var(--panel)', 
+          padding: '6px', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center',
+          minHeight: 0,
+          minWidth: 0,
+          overflow: 'hidden'
+        }}>
+          
+          {/* MOLDURA 16:9 PRETA RÍGIDA */}
+          <div style={{
+            position: 'relative',
+            aspectRatio: '16 / 9',
+            height: '100%', 
+            maxWidth: '100%', 
+            maxHeight: '100%',
+            background: '#000', 
+            border: '1px solid var(--border)',
+            boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)',
+            borderRadius: '4px',
+            overflow: 'hidden',
+            flexShrink: 0
+          }}>
+            
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {previewSrc ? (
+                (() => {
+                  const activeClip  = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
+                  const effect      = activeClip?.effect || 'none';
+                  const transition  = activeClip?.transition || 'none';
+                  const effectClass = effect === 'kenburns' ? (Math.floor(activeClip.startTime) % 2 === 0 ? 'effect-kenburns' : 'effect-kenburns2') : '';
+                  const transClass  = transition === 'fade' ? 'transition-fade' : transition === 'zoom' ? 'transition-zoom' : '';
+                  return (
+                    <img key={activeClip?.id}
+                      src={previewSrc} alt="preview"
+                      className={`${effectClass} ${transClass}`}
+                      style={{ width:'100%', height:'100%', objectFit:'contain' }} />
+                  );
+                })()
+              ) : (
+                <div style={{ color:'var(--muted)', textAlign:'center' }}>
+                  <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
+                  <div style={{ fontFamily:'Share Tech Mono', fontSize:11 }}>SEM SINAL</div>
+                </div>
+              )}
             </div>
-          )}
-          <div className="mono" style={{ position:'absolute', top:10, right:12, background:'rgba(0,0,0,0.7)', padding:'3px 8px', fontSize:12, color:'var(--accent2)', borderRadius:2 }}>
-            {fmt(currentTime)}
+            
+            {/* Timecode ancorado no canto da moldura */}
+            <div className="mono" style={{ position:'absolute', top:10, right:12, background:'rgba(0,0,0,0.7)', padding:'3px 8px', fontSize:12, color:'var(--accent2)', borderRadius:2, zIndex: 10 }}>
+              {fmt(currentTime)}
+            </div>
           </div>
         </div>
       </div>
@@ -1159,51 +1262,64 @@ function App() {
       <div style={{ height:220, background:'var(--surface)', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', flexShrink:0 }}>
 
         {/* controles */}
-        <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', gap:8, background:'var(--bg)' }}>
-          <button className="btn btn-ghost" style={{ padding:'4px 8px' }} onClick={() => { setIsPlaying(false); setCurrentTime(0); if(narrationRef.current){narrationRef.current.pause();narrationRef.current.currentTime=0;} if(bgmRef.current){bgmRef.current.pause();bgmRef.current.currentTime=0;} }}>⏮</button>
-          <button className="btn btn-ghost" style={{ padding:'4px 10px' }} onClick={() => setIsPlaying(p => !p)}>
-            {isPlaying ? '⏸' : '▶'}
-          </button>
-          {selectedClip && selectedClip.trackId !== 'video-1' && (
-            <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--panel)', padding:'2px 8px', borderRadius:2, border:'1px solid var(--border)' }}>
-              <span style={{ fontSize:11, color:'#9ab8d4' }}>🔊</span>
-              <input type="range" min="0" max="1" step="0.05"
-                value={volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
-                onChange={e => {
-                  const v = parseFloat(e.target.value);
-                  setVolumes(p => ({ ...p, [selectedId]: v }));
-                  if (selectedClip.trackId === 'audio-1' && narrationRef.current) narrationRef.current.volume = v;
-                  if (selectedClip.trackId === 'audio-2' && bgmRef.current) bgmRef.current.volume = v;
-                }}
-                style={{ width:70, accentColor:'var(--accent2)' }}
-              />
-              <span className="mono" style={{ fontSize:10, color:'#9ab8d4', minWidth:28 }}>
-                {Math.round((volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)) * 100)}%
-              </span>
-            </div>
-          )}
-          {selectedClip && selectedClip.trackId === 'video-1' && (
-            <>
-              <div style={{ width:1, height:20, background:'var(--border)', margin:'0 4px' }}/>
-              <select value={selectedClip.transition} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,transition:e.target.value}:c))}
-                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
-                <option value="none">Sem transição</option>
-                <option value="fade">Fade</option>
-                <option value="zoom">Zoom</option>
-              </select>
-              <select value={selectedClip.effect} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,effect:e.target.value}:c))}
-                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
-                <option value="none">Sem efeito</option>
-                <option value="kenburns">Ken Burns</option>
-              </select>
-              <button className="btn btn-ghost" style={{ fontSize:10, padding:'2px 6px' }}
-                title="Aplicar Ken Burns em TODAS as imagens"
-                onClick={() => setClips(p => p.map(c => c.trackId === 'video-1' ? {...c, effect:'kenburns'} : c))}>
-                ✦ Todas
-              </button>
-            </>
-          )}
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto' }}>
+        <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', background:'var(--bg)' }}>
+          
+          {/* Esquerda: Ferramentas do Clip (Áudio/Vídeo) */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flex:1 }}>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={past.length === 0} onClick={undo} title="Desfazer (Ctrl+Z)">⟲</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={future.length === 0} onClick={redo} title="Refazer (Ctrl+Y)">⟳</button>
+            <div style={{ width:1, height:20, background:'var(--border)', margin:'0 4px' }}/>
+
+            {selectedClip && selectedClip.trackId !== 'video-1' && (
+              <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--panel)', padding:'2px 8px', borderRadius:2, border:'1px solid var(--border)' }}>
+                <span style={{ fontSize:11, color:'var(--muted)' }}>🔊</span>
+                <input type="range" min="0" max="1" step="0.05"
+                  value={volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    setVolumes(p => ({ ...p, [selectedId]: v }));
+                    if (selectedClip.trackId === 'audio-1' && narrationRef.current) narrationRef.current.volume = v;
+                    if (selectedClip.trackId === 'audio-2' && bgmRef.current) bgmRef.current.volume = v;
+                  }}
+                  style={{ width:70, accentColor:'var(--accent2)' }}
+                />
+                <span className="mono" style={{ fontSize:10, color:'var(--muted)', minWidth:28 }}>
+                  {Math.round((volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)) * 100)}%
+                </span>
+              </div>
+            )}
+            {selectedClip && selectedClip.trackId === 'video-1' && (
+              <>
+                <select value={selectedClip.transition} onChange={e => { setPast(p => [...p, clips]); setFuture([]); setClips(p => p.map(c => c.id===selectedId ? {...c,transition:e.target.value}:c)); }}
+                  style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
+                  <option value="none">Sem transição</option>
+                  <option value="fade">Fade</option>
+                  <option value="zoom">Zoom</option>
+                </select>
+                <select value={selectedClip.effect} onChange={e => { setPast(p => [...p, clips]); setFuture([]); setClips(p => p.map(c => c.id===selectedId ? {...c,effect:e.target.value}:c)); }}
+                  style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
+                  <option value="none">Sem efeito</option>
+                  <option value="kenburns">Ken Burns</option>
+                </select>
+                <button className="btn btn-ghost" style={{ fontSize:10, padding:'2px 6px' }}
+                  title="Aplicar Ken Burns em TODAS as imagens"
+                  onClick={() => { setPast(p => [...p, clips]); setFuture([]); setClips(p => p.map(c => c.trackId === 'video-1' ? {...c, effect:'kenburns'} : c)); }}>
+                  ✦ Todas
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Centro: Playback (Play, Pause, Stop) */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center' }}>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px' }} title="Stop / Início" onClick={() => { setIsPlaying(false); setCurrentTime(0); if(narrationRef.current){narrationRef.current.pause();narrationRef.current.currentTime=0;} if(bgmRef.current){bgmRef.current.pause();bgmRef.current.currentTime=0;} }}>⏮</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 10px' }} title="Play / Pause" onClick={() => setIsPlaying(p => !p)}>
+              {isPlaying ? '⏸' : '▶'}
+            </button>
+          </div>
+
+          {/* Direita: Ferramentas de Timeline */}
+          <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, justifyContent:'flex-end' }}>
             {/* Snap toggle */}
             <button className={`btn ${snapOn ? 'btn-primary' : 'btn-ghost'}`}
               style={{ padding:'4px 8px', fontSize:11 }}
@@ -1215,7 +1331,7 @@ function App() {
             {/* Zoom controls */}
             <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }}
               onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} title="Zoom out (Ctrl+-)">−</button>
-            <span className="mono" style={{ fontSize:10, color:'#9ab8d4', minWidth:32, textAlign:'center' }}>
+            <span className="mono" style={{ fontSize:10, color:'var(--muted)', minWidth:32, textAlign:'center' }}>
               {Math.round(zoom * 100)}%
             </span>
             <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }}
@@ -1231,7 +1347,7 @@ function App() {
 
             {/* Delete */}
             <button className="btn btn-danger" style={{ padding:'4px 8px' }} disabled={!selectedId}
-              onClick={() => { setClips(p => p.filter(c => c.id !== selectedId)); setSelectedId(null); }}>
+              onClick={() => { setPast(p => [...p, clips]); setFuture([]); setClips(p => p.filter(c => c.id !== selectedId)); setSelectedId(null); }}>
               🗑
             </button>
           </div>
@@ -1244,7 +1360,7 @@ function App() {
             <div style={{ height:22, borderBottom:'1px solid var(--border)', background:'var(--bg)' }}/>
             {TRACKS.map(t => (
               <div key={t.id} className="track-row" style={{ display:'flex', alignItems:'center', paddingLeft:10, background:t.color }}>
-                <span style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:0.5, color:'#b0c8e0', fontWeight:600 }}>{t.name}</span>
+                <span style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:0.5, color:'var(--text)', fontWeight:600 }}>{t.name}</span>
               </div>
             ))}
           </div>
@@ -1262,7 +1378,7 @@ function App() {
               <div style={{ height:22, background:'var(--bg)', borderBottom:'1px solid var(--border)', position:'relative' }}>
                 {Array.from({ length: Math.ceil(duration) }).map((_,i) => (
                   <div key={i} style={{ position:'absolute', left: i * PPS * zoom, height:'100%', borderLeft:'1px solid var(--border)', paddingLeft:3 }}>
-                    {(i % Math.max(1, Math.round(5/zoom)) === 0) && <span className="mono" style={{ fontSize:9, color:'#7090b0' }}>{i}s</span>}
+                    {(i % Math.max(1, Math.round(5/zoom)) === 0) && <span className="mono" style={{ fontSize:9, color:'var(--muted)' }}>{i}s</span>}
                   </div>
                 ))}
               </div>
@@ -1318,7 +1434,7 @@ function App() {
                                 <img src={media.url} alt=""
                                   style={{ height:'100%', width:'auto', maxWidth:40, objectFit:'cover', opacity:0.8, flexShrink:0 }}/>
                               )}
-                              <span style={{ padding:'2px 6px', fontSize:10, color:'#ffffff', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', position:'relative', zIndex:1, textShadow:'0 1px 3px rgba(0,0,0,0.8)' }}>
+                              <span style={{ padding:'2px 6px', fontSize:10, color:'var(--text)', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', position:'relative', zIndex:1, textShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.8)' }}>
                                 {media?.name || '—'}
                               </span>
                             </div>
@@ -1343,7 +1459,7 @@ function App() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: ENVIAR AO MOTOR
+            MODAL: ENVIAR AO MOTOR
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'ai' && (
         <div className="modal-overlay" onClick={() => !aiStatus.running && setModal(null)}>
@@ -1441,7 +1557,7 @@ function App() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: JOBS
+            MODAL: JOBS
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'jobs' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
@@ -1490,7 +1606,7 @@ function App() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: EXPORTAR
+            MODAL: EXPORTAR
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'export' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
