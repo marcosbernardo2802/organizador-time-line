@@ -55,14 +55,13 @@
       overflow: hidden;
     }
 
-
-
     #root { height: 100vh; display: flex; flex-direction: column; }
 
     /* ── Scrollbar ── */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
     ::-webkit-scrollbar-track { background: var(--surface); }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 
     /* ── Glow utilities ── */
     .glow-accent { box-shadow: 0 0 12px rgba(45,107,228,0.4); }
@@ -84,6 +83,22 @@
     }
     .hud-box::before { top: -1px; left: -1px; border-width: 1px 0 0 1px; }
     .hud-box::after  { bottom: -1px; right: -1px; border-width: 0 1px 1px 0; }
+
+    /* ── Inputs / Selects ── */
+    .editor-select {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 10px;
+      border-radius: 3px;
+      font-family: 'Exo 2', sans-serif;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+      appearance: none;
+    }
+    .editor-select:focus { border-color: var(--accent); }
 
     /* ── Buttons ── */
     .btn {
@@ -193,9 +208,10 @@
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
-      50%       { opacity: 0.4; }
+      50%        { opacity: 0.4; }
     }
 
+    /* Animações e Filtros de Preview FFmpeg */
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(4px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -203,21 +219,93 @@
 
     @keyframes kenburns {
       0%   { transform: scale(1) translate(0,0); }
-      100% { transform: scale(1.12) translate(-2%,-2%); }
+      100% { transform: scale(1.15) translate(-2%,-2%); }
     }
     @keyframes kenburns2 {
-      0%   { transform: scale(1.1) translate(2%,1%); }
+      0%   { transform: scale(1.15) translate(2%,1%); }
       100% { transform: scale(1) translate(0,0); }
     }
-    @keyframes zoomIn {
-      from { transform: scale(1.08); opacity:0.7; }
-      to   { transform: scale(1); opacity:1; }
+    @keyframes zoom_in {
+      0%   { transform: scale(1); }
+      100% { transform: scale(1.2); }
     }
+    @keyframes pan_right {
+      0%   { transform: scale(1.1) translateX(-3%); }
+      100% { transform: scale(1.1) translateX(3%); }
+    }
+    @keyframes pan_left {
+      0%   { transform: scale(1.1) translateX(3%); }
+      100% { transform: scale(1.1) translateX(-3%); }
+    }
+    
+    @keyframes wipeleft {
+      from { clip-path: inset(0 0 0 100%); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes wiperight {
+      from { clip-path: inset(0 100% 0 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes slideleft { from { transform: translateX(100%); } to { transform: translateX(0); } }
+    @keyframes slideright { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+    @keyframes slideup { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slidedown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    @keyframes fadeblack { from { filter: brightness(0); } to { filter: brightness(1); } }
+    @keyframes fadewhite { from { filter: brightness(10); } to { filter: brightness(1); } }
+    @keyframes dissolve { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
+
+    @keyframes grain_dance {
+      0% { transform: translate(0, 0); }
+      20% { transform: translate(-2%, 2%); }
+      40% { transform: translate(2%, -2%); }
+      60% { transform: translate(-2%, -2%); }
+      80% { transform: translate(2%, 2%); }
+      100% { transform: translate(0, 0); }
+    }
+
+    .wrapper-grain::after {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      width: 140%;
+      height: 140%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
+      opacity: var(--grain-opacity, 0.4);
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 5;
+      animation: grain_dance 0.4s steps(4) infinite;
+    }
+
+    .wrapper-vignette::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 calc(var(--filter-intensity) * 2px) rgba(0,0,0, 0.9);
+      pointer-events: none;
+      z-index: 5;
+    }
+    
     .animate-fade      { animation: fadeIn 0.3s ease; }
-    .effect-kenburns   { animation: kenburns 12s ease-out forwards; }
-    .effect-kenburns2  { animation: kenburns2 12s ease-in forwards; }
-    .transition-fade   { animation: fadeIn 0.6s ease-in-out; }
-    .transition-zoom   { animation: zoomIn 0.5s ease-out; }
+    .transition-fade   { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-zoom   { animation: zoom_in var(--trans-dur, 0.8s) ease-out; }
+    .transition-crossfade { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wipeleft  { animation: wipeleft var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wiperight { animation: wiperight var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-slideleft { animation: slideleft var(--trans-dur, 0.8s) ease-out; }
+    .transition-slideright { animation: slideright var(--trans-dur, 0.8s) ease-out; }
+    .transition-slideup { animation: slideup var(--trans-dur, 0.8s) ease-out; }
+    .transition-slidedown { animation: slidedown var(--trans-dur, 0.8s) ease-out; }
+    .transition-fadeblack { animation: fadeblack var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-fadewhite { animation: fadewhite var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-dissolve { animation: dissolve var(--trans-dur, 0.8s) ease-in-out; }
+    
+    .effect-kenburns   { animation: kenburns 12s linear forwards; }
+    .effect-kenburns2  { animation: kenburns2 12s linear forwards; }
+    .effect-zoom_in    { animation: zoom_in 12s linear forwards; }
+    .effect-pan_right  { animation: pan_right 12s linear forwards; }
+    .effect-pan_left   { animation: pan_left 12s linear forwards; }
+
   </style>
 </head>
 <body>
@@ -395,6 +483,9 @@ function App() {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('cronicas_theme', theme);
   }, [theme]);
+
+  // Guias do Painel Direito
+  const [rightPanelTab, setRightPanelTab] = useState('Ajustes');
 
   // Preview
   const [previewSrc, setPreviewSrc] = useState(null);
@@ -657,7 +748,7 @@ function App() {
             trackId:    'video-1',
             startTime:  cena.start,
             duration:   cena.duration_real || cena.duration,
-            offset: 0, transition: 'none', effect: 'none',
+            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0
           });
         });
 
@@ -670,13 +761,15 @@ function App() {
             trackId:   'audio-1',
             startTime: 0,
             duration:  tl.duracao_total,
-            offset: 0, transition: 'none', effect: 'none',
+            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0
           });
         }
 
         return extraLibrary.length > 0 ? [...prevLib, ...extraLibrary] : prevLib;
       });
 
+      setPast([]);
+      setFuture([]);
       setClips(newClips);
       setDuration(tl.duracao_total + 10);
       setCurrentTime(0);
@@ -696,59 +789,122 @@ function App() {
   const onClipMouseDown = (e, clipId, type) => {
     e.stopPropagation();
     const clip = clips.find(c => c.id === clipId);
-    setDragState({ id: clipId, type, startX: e.clientX, origStart: clip.startTime, origDur: clip.duration });
+    setDragState({ id: clipId, type, startX: e.clientX, origStart: clip.startTime, origDur: clip.duration, origClips: clips });
     setSelectedId(clipId);
   };
 
-  const snapToNearest = (time, excludeId) => {
-    if (!snapOn) return time;
-    // Threshold em segundos proporcional ao zoom — mais zoom = snap mais preciso
-    const threshold = 1.5 / zoom;
-    let best = time;
-    let bestDist = threshold;
-
+  const getSnapTarget = (time, excludeId) => {
+    let target = time;
+    let minD = 1.5 / zoom; // Threshold responsivo ao zoom
+    
+    // Snap ao início absoluto da timeline
+    if (Math.abs(time) < minD) {
+      minD = Math.abs(time);
+      target = 0;
+    }
+    
+    // Snap a outros clips
     clips.forEach(c => {
       if (c.id === excludeId) return;
-      // Testa início e fim de cada clip
       [c.startTime, c.startTime + c.duration].forEach(t => {
         const d = Math.abs(time - t);
-        if (d < bestDist) { bestDist = d; best = t; }
+        if (d < minD) { minD = d; target = t; }
       });
     });
 
-    // Snap ao início da timeline
-    if (Math.abs(time) < bestDist) best = 0;
+    // Snap à agulha de reprodução (Playhead vermelha)
+    if (Math.abs(time - currentTime) < minD) {
+      minD = Math.abs(time - currentTime);
+      target = currentTime;
+    }
 
-    return best;
+    return { target, minD };
   };
 
   const onMouseMove = (e) => {
     if (!dragState) return;
     const pps = PPS * zoom;
     const delta = (e.clientX - dragState.startX) / pps;
+    
     setClips(prev => prev.map(c => {
       if (c.id !== dragState.id) return c;
+      
       if (dragState.type === 'move') {
-        const raw = Math.max(0, dragState.origStart + delta);
-        return { ...c, startTime: snapToNearest(raw, c.id) };
+        const rawStart = Math.max(0, dragState.origStart + delta);
+        if (!snapOn) return { ...c, startTime: rawStart };
+
+        const rawEnd = rawStart + dragState.origDur;
+        
+        // Verifica o que está mais perto: o início do clip colar em algo, ou o fim do clip colar em algo
+        const snapStart = getSnapTarget(rawStart, c.id);
+        const snapEnd = getSnapTarget(rawEnd, c.id);
+        
+        if (snapStart.minD <= snapEnd.minD && snapStart.minD < 1.5 / zoom) {
+          return { ...c, startTime: snapStart.target };
+        } else if (snapEnd.minD < 1.5 / zoom) {
+          return { ...c, startTime: Math.max(0, snapEnd.target - dragState.origDur) };
+        }
+        return { ...c, startTime: rawStart };
       }
+      
       if (dragState.type === 'resize-right') {
-        const nd = Math.max(0.5, dragState.origDur + delta);
+        const rawEnd = dragState.origStart + dragState.origDur + delta;
+        const finalEnd = snapOn ? getSnapTarget(rawEnd, c.id).target : rawEnd;
+        const nd = Math.max(0.1, finalEnd - dragState.origStart); // Bloqueia inversão de clip
         return { ...c, duration: nd };
       }
+      
       if (dragState.type === 'resize-left') {
-        const ns = Math.max(0, dragState.origStart + delta);
-        const nd = Math.max(0.5, dragState.origDur - (ns - dragState.origStart));
-        return { ...c, startTime: snapToNearest(ns, c.id), duration: nd };
+        const rawStart = Math.max(0, dragState.origStart + delta);
+        const finalStart = snapOn ? getSnapTarget(rawStart, c.id).target : rawStart;
+        const nd = Math.max(0.1, (dragState.origStart + dragState.origDur) - finalStart);
+        if (finalStart >= dragState.origStart + dragState.origDur - 0.1) return c; // Bloqueia inversão
+        return { ...c, startTime: finalStart, duration: nd };
       }
+      
       return c;
     }));
   };
 
-  const onMouseUp = () => { setDragState(null); };
+  const onMouseUp = () => {
+    if (dragState) {
+      const clip = clips.find(c => c.id === dragState.id);
+      if (clip && (clip.startTime !== dragState.origStart || clip.duration !== dragState.origDur)) {
+        setPast(p => [...p, dragState.origClips]);
+        setFuture([]);
+      }
+    }
+    setDragState(null);
+  };
 
-  // ── PLAYBACK ────────────────────────────────────────────────────────────────
-  // Sync audio elements with playback state
+  // ── PLAYBACK E ATUALIZAÇÃO ──────────────────────────────────────────────────
+  const updateSelectedClip = (updates) => {
+    setPast(p => [...p, clips]); setFuture([]);
+    setClips(p => p.map(c => c.id === selectedId ? { ...c, ...updates } : c));
+  };
+
+  const updateDurationAndRipple = (id, newDuration) => {
+    setPast(p => [...p, clips]); setFuture([]);
+    setClips(prev => {
+      const target = prev.find(c => c.id === id);
+      if (!target) return prev;
+      const delta = newDuration - target.duration;
+      return prev.map(c => {
+        if (c.id === id) return { ...c, duration: newDuration };
+        // Se for na mesma trilha e estiver posicionado depois do clip alterado, ajusta o tempo (Ripple)
+        if (snapOn && c.trackId === target.trackId && c.startTime > target.startTime + 0.01) {
+           return { ...c, startTime: Math.max(0, c.startTime + delta) };
+        }
+        return c;
+      });
+    });
+  };
+
+  const applyToAllVideos = (updates) => {
+    setPast(p => [...p, clips]); setFuture([]);
+    setClips(p => p.map(c => c.trackId === 'video-1' ? { ...c, ...updates } : c));
+  };
+
   useEffect(() => {
     const narClip = clips.find(c => c.trackId === 'audio-1');
     const bgmClip = clips.find(c => c.trackId === 'audio-2');
@@ -759,13 +915,14 @@ function App() {
       if (narMedia?.url) {
         if (narrationRef.current.src !== narMedia.url) {
           narrationRef.current.src = narMedia.url;
-          narrationRef.current.volume = 1.0;
-          // Para automaticamente quando o áudio terminar
+          narrationRef.current.volume = volumes[narClip.id] ?? 1.0;
           narrationRef.current.onended = () => {
             setIsPlaying(false);
             setCurrentTime(0);
             if (bgmRef.current) { bgmRef.current.pause(); bgmRef.current.currentTime = 0; }
           };
+        } else {
+          narrationRef.current.volume = volumes[narClip?.id] ?? 1.0;
         }
         const expTime = currentTime - (narClip?.startTime || 0);
         if (Math.abs(narrationRef.current.currentTime - expTime) > 0.3) {
@@ -782,7 +939,7 @@ function App() {
       if (bgmMedia?.url) {
         if (bgmRef.current.src !== bgmMedia.url) {
           bgmRef.current.src = bgmMedia.url;
-          bgmRef.current.volume = 0.2;
+          bgmRef.current.volume = volumes[bgmClip.id] ?? 0.2;
         }
         const expTime = currentTime - (bgmClip?.startTime || 0);
         if (Math.abs(bgmRef.current.currentTime - expTime) > 0.3) {
@@ -799,7 +956,7 @@ function App() {
         bgmRef.current.pause();
       }
     }
-  }, [isPlaying, currentTime, clips, library]);
+  }, [isPlaying, currentTime, clips, library, volumes]);
 
   useEffect(() => {
     if (isPlaying) {
@@ -807,12 +964,16 @@ function App() {
         const now   = Date.now();
         const delta = (now - lastRef.current) / 1000;
         lastRef.current = now;
+        
+        // Calcula o final exato do último clipe na timeline
+        const maxTime = clips.length > 0 ? Math.max(...clips.map(c => c.startTime + c.duration)) : duration;
+
         setCurrentTime(t => {
-          if (t + delta >= duration) {
+          if (t + delta >= maxTime) {
             setIsPlaying(false);
             if (narrationRef.current) narrationRef.current.pause();
             if (bgmRef.current) bgmRef.current.pause();
-            return duration;
+            return maxTime;
           }
           return t + delta;
         });
@@ -824,7 +985,7 @@ function App() {
       cancelAnimationFrame(animRef.current);
     }
     return () => cancelAnimationFrame(animRef.current);
-  }, [isPlaying, duration]);
+  }, [isPlaying, duration, clips]);
 
   // Preview da imagem ativa
   useEffect(() => {
@@ -838,19 +999,17 @@ function App() {
   // ── SALVAR / CARREGAR PROJETO LOCAL ────────────────────────────────────────
   const salvaProjetoLocal = () => {
     try {
-      // Salva tudo exceto as URLs de blob (não são serializáveis)
       const projeto = {
         versao:   '3.0',
         salvo_em: new Date().toISOString(),
         duration,
         clips,
-        // Salva nome, tipo e duração — mas não a URL (blob não persiste)
         library:  library.map(m => ({
           id:       m.id,
           name:     m.name,
           type:     m.type,
           duration: m.duration,
-          placeholder: true, // marca para recarregar depois
+          placeholder: true,
         })),
       };
       localStorage.setItem('cronicas_projeto', JSON.stringify(projeto));
@@ -870,6 +1029,8 @@ function App() {
 
       if (!confirm(`Carregar projeto salvo em ${salvoEm}?\n\n⚠️ Isso vai substituir a timeline atual.\nAs imagens precisarão ser recarregadas pelo "+".`)) return;
 
+      setPast([]);
+      setFuture([]);
       setClips(projeto.clips || []);
       setLibrary(projeto.library || []);
       setDuration(projeto.duration || 60);
@@ -886,14 +1047,12 @@ function App() {
     }
   };
 
-  // Verifica se tem projeto salvo ao iniciar
   const [temProjetoSalvo, setTemProjetoSalvo] = useState(false);
   useEffect(() => {
     const raw = localStorage.getItem('cronicas_projeto');
     setTemProjetoSalvo(!!raw);
   }, []);
 
-  // Auto-save a cada 2 minutos
   useEffect(() => {
     if (clips.length === 0) return;
     const interval = setInterval(() => {
@@ -907,7 +1066,6 @@ function App() {
         localStorage.setItem('cronicas_projeto', JSON.stringify(projeto));
         localStorage.setItem('cronicas_salvo_em', new Date().toLocaleString('pt-BR'));
         setTemProjetoSalvo(true);
-        console.log('[auto-save] Projeto salvo automaticamente');
       } catch(e) {}
     }, 2 * 60 * 1000);
     return () => clearInterval(interval);
@@ -933,7 +1091,21 @@ function App() {
         case 'Delete':
         case 'Backspace':
           if (selectedId) {
-            setClips(p => p.filter(c => c.id !== selectedId));
+            setPast(p => [...p, clips]); setFuture([]);
+            setClips(prev => {
+              const clipToDelete = prev.find(c => c.id === selectedId);
+              let nextClips = prev.filter(c => c.id !== selectedId);
+              if (clipToDelete && snapOn) {
+                const delta = -clipToDelete.duration;
+                nextClips = nextClips.map(c => {
+                  if (c.trackId === clipToDelete.trackId && c.startTime > clipToDelete.startTime) {
+                    return { ...c, startTime: Math.max(0, c.startTime + delta) };
+                  }
+                  return c;
+                });
+              }
+              return nextClips;
+            });
             setSelectedId(null);
           }
           break;
@@ -974,25 +1146,32 @@ function App() {
 
   // ── TELA CHEIA ───────────────────────────────────────────────────────────────
   useEffect(() => {
+    const handleFsChange = () => {
+      setFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    return () => document.removeEventListener('fullscreenchange', handleFsChange);
+  }, []);
+
+  useEffect(() => {
     if (!previewRef.current) return;
-    if (fullscreen) {
-      previewRef.current.requestFullscreen?.().catch(() => {});
-    } else {
-      if (document.fullscreenElement) document.exitFullscreen?.();
+    if (fullscreen && !document.fullscreenElement) {
+      previewRef.current.requestFullscreen?.().catch(() => {
+        console.warn("A tela cheia foi bloqueada ou não é suportada neste ambiente.");
+        setFullscreen(false);
+      });
+    } else if (!fullscreen && document.fullscreenElement) {
+      document.exitFullscreen?.().catch(() => {});
     }
   }, [fullscreen]);
 
   // ── RECONECTA MÍDIAS DA BIBLIOTECA PELO NOME ────────────────────────────────
-  // Reconecta mídias da biblioteca pelo nome quando novas mídias são carregadas
   useEffect(() => {
     if (library.length === 0) return;
     setClips(prevClips => prevClips.map(clip => {
-      // Se o clip já tem mídia com URL válida, não muda
       const currentMedia = library.find(m => m.id === clip.mediaId);
       if (currentMedia?.url) return clip;
-      // Tenta reconectar pelo nome
-      const byName = library.find(m => m.url && !m.placeholder &&
-        m.name.toLowerCase() === (currentMedia?.name || '').toLowerCase());
+      const byName = library.find(m => m.url && !m.placeholder && m.name.toLowerCase() === (currentMedia?.name || '').toLowerCase());
       if (byName) return { ...clip, mediaId: byName.id };
       return clip;
     }));
@@ -1007,10 +1186,7 @@ function App() {
       setAiFiles(p => ({ ...p, images: sorted }));
     } else {
       setAiFiles(p => ({ ...p, [type]: files[0] }));
-      // Cacheia arquivo no fileCache para re-upload posterior
-      fileCache.current[files[0].name] = files[0];
     }
-    // Cria URLs locais para biblioteca e cacheia arquivos originais
     if (type === 'images') {
       const imgs = files.sort((a,b) => a.name.localeCompare(b.name,undefined,{numeric:true}));
       const newLib = imgs.map((f,i) => ({
@@ -1020,13 +1196,11 @@ function App() {
         url: URL.createObjectURL(f),
         duration: 5,
       }));
-      // Cacheia arquivo original pelo nome
       imgs.forEach(f => { fileCache.current[f.name] = f; });
       setLibrary(prev => [...prev, ...newLib]);
     }
   };
 
-  // ── STATUS BADGE ────────────────────────────────────────────────────────────
   const motorStatus = () => {
     const proc = jobs.filter(j => j.status === 'processando').length;
     const fila  = jobs.filter(j => j.status === 'fila').length;
@@ -1038,9 +1212,6 @@ function App() {
 
   const mStatus = motorStatus();
   const selectedClip = clips.find(c => c.id === selectedId);
-
-  // ── RENDER ──────────────────────────────────────────────────────────────────
-  // Sem tela de login — app carrega direto
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}
@@ -1057,21 +1228,21 @@ function App() {
           <span style={{ fontFamily:'Rajdhani', fontWeight:700, fontSize:15, letterSpacing:2, color:'var(--accent2)' }}>
             CRÔNICAS ESTELARES
           </span>
-          <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'#7090b0' }}>v3.0</span>
+          <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>v3.0</span>
           <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:8 }}>
             <span className={`status-dot ${mStatus.dot}`}></span>
-            <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'#9ab8d4' }}>{mStatus.label}</span>
+            <span style={{ fontFamily:'Share Tech Mono', fontSize:10, color:'var(--muted)' }}>{mStatus.label}</span>
           </div>
         </div>
 
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button className="btn btn-ghost" style={{ fontSize:14, padding:'4px 8px' }}
+          <button className="btn btn-ghost" style={{ fontSize:14, padding:'4px 8px' }} 
             onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
-            title="Alternar Tema">
+            title="Alternar Tema Claro/Escuro">
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           {userInfo ? (
-            <span style={{ fontSize:11, color:'#7090b0', fontFamily:'Share Tech Mono' }}
+            <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'Share Tech Mono' }}
               title="Atalhos: Espaço=Play/Pause | Delete=Remover | F=Tela Cheia | Home=Início | ←→=Navegar | Ctrl+/- =Zoom">
               {userInfo.email} · ⌨️
             </span>
@@ -1111,7 +1282,7 @@ function App() {
         {/* ── BIBLIOTECA ── */}
         <div className="hud-box" style={{ width:200, display:'flex', flexDirection:'column', borderRadius:0, borderTop:'none', borderLeft:'none', borderBottom:'none' }}>
           <div style={{ padding:'8px 10px', borderBottom:'1px solid var(--border)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-            <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:1, color:'#9ab8d4' }}>BIBLIOTECA</span>
+            <span style={{ fontFamily:'Rajdhani', fontSize:11, letterSpacing:1, color:'var(--muted)' }}>BIBLIOTECA</span>
             <label style={{ cursor:'pointer', color:'var(--accent)', fontSize:12 }} title="Importar mídia">
               +
               <input type="file" multiple accept="video/*,image/*,audio/*" style={{ display:'none' }} onChange={async (e) => {
@@ -1126,16 +1297,13 @@ function App() {
                   });
                   newMedias.push({ id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur });
                 }
-                // Cacheia arquivos originais pelo nome para re-upload
                 Array.from(e.target.files).forEach(f => { fileCache.current[f.name] = f; });
 
                 setLibrary(prev => {
-                  // Remove placeholders com mesmo nome e adiciona versão com URL
                   const semPlaceholder = prev.filter(m => {
                     if (!m.placeholder) return true;
                     return !newMedias.find(n => n.name.toLowerCase() === m.name.toLowerCase());
                   });
-                  // Reconecta clips que usavam o placeholder
                   setClips(prevClips => prevClips.map(clip => {
                     const placeholder = prev.find(m => m.placeholder && m.id === clip.mediaId);
                     if (!placeholder) return clip;
@@ -1154,9 +1322,10 @@ function App() {
             )}
             {library.map(m => (
               <div key={m.id} onClick={() => {
+                setPast(p => [...p, clips]); setFuture([]);
                 const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
                 const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
-                setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, transition:'none', effect:'none' }]);
+                setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, fit:'contain', transition:'none', transitionDuration: 0.8, effect:'none', filter:'none', filterIntensity: 100, fadeIn:0, fadeOut:0 }]);
                 if (lastEnd + m.duration > duration) setDuration(lastEnd + m.duration + 10);
               }} style={{
                 display:'flex', alignItems:'center', gap:6, padding:'5px 6px',
@@ -1164,7 +1333,7 @@ function App() {
                 marginBottom:4, cursor:'pointer', fontSize:11,
               }}>
                 <span>{m.type.startsWith('video') ? '🎬' : m.type.startsWith('audio') ? '🎵' : '🖼️'}</span>
-                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'#d0e4f4' }}>{m.name}</span>
+                <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>{m.name}</span>
               </div>
             ))}
           </div>
@@ -1175,143 +1344,373 @@ function App() {
         <audio ref={bgmRef}       style={{ display:'none' }} />
 
         {/* ── PREVIEW ── */}
-        <div ref={previewRef} style={{
-          flex: 1,
-          background: 'var(--panel)',
-          padding: '6px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: 0,
-          minWidth: 0,
-          overflow: 'hidden'
-        }}>
-          {/* Moldura 16:9 fixa */}
-          <div style={{
-            position: 'relative',
-            aspectRatio: '16 / 9',
-            height: '100%',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            background: '#000',
-            border: '1px solid var(--border)',
-            boxShadow: theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)',
-            borderRadius: '4px',
-            overflow: 'hidden',
-            flexShrink: 0,
+        <div ref={previewRef} style={{ flex: 1, background: fullscreen ? '#000' : 'var(--panel)', padding: fullscreen ? '0px' : '6px', display: 'flex' }}>
+          
+          <div style={{ 
+            flex: 1, 
+            containerType: 'size', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            minHeight: 0,
+            minWidth: 0
           }}>
-            <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', justifyContent:'center' }}>
-              {previewSrc ? (
-                (() => {
-                  const activeClip  = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
-                  const effect      = activeClip?.effect || 'none';
-                  const transition  = activeClip?.transition || 'none';
-                  const effectClass = effect === 'kenburns' ? (Math.floor(activeClip.startTime) % 2 === 0 ? 'effect-kenburns' : 'effect-kenburns2') : '';
-                  const transClass  = transition === 'fade' ? 'transition-fade' : transition === 'zoom' ? 'transition-zoom' : '';
-                  return (
-                    <img key={activeClip?.id}
-                      src={previewSrc} alt="preview"
-                      className={`${effectClass} ${transClass}`}
-                      style={{ width:'100%', height:'100%', objectFit:'contain' }} />
-                  );
-                })()
-              ) : (
-                <div style={{ color:'var(--muted)', textAlign:'center' }}>
-                  <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
-                  <div style={{ fontFamily:'Share Tech Mono', fontSize:11 }}>SEM SINAL</div>
-                </div>
-              )}
-            </div>
-            {/* Timecode ancorado no canto da moldura */}
-            <div className="mono" style={{ position:'absolute', top:10, right:12, background:'rgba(0,0,0,0.7)', padding:'3px 8px', fontSize:12, color:'var(--accent2)', borderRadius:2, zIndex:10 }}>
-              {fmt(currentTime)}
+            
+            <div style={{
+              position: 'relative',
+              aspectRatio: '16 / 9',
+              width: '100cqw', 
+              maxWidth: 'calc(100cqh * 16 / 9)', 
+              maxHeight: '100cqh',
+              background: '#000', 
+              border: fullscreen ? 'none' : '1px solid var(--border)',
+              boxShadow: fullscreen ? 'none' : (theme === 'dark' ? '0 8px 32px rgba(0,0,0,0.5)' : '0 8px 32px rgba(0,0,0,0.15)'),
+              borderRadius: fullscreen ? '0px' : '4px',
+              overflow: 'hidden',
+              flexShrink: 0
+            }}>
+              
+              <div 
+                className={
+                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'grain') ? 'wrapper-grain' : 
+                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'vignette') ? 'wrapper-vignette' : ''
+                }
+                style={{ 
+                  position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  '--grain-opacity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100) / 100,
+                  '--filter-intensity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100)
+                }}
+              >
+                {previewSrc ? (
+                  (() => {
+                    const activeClip  = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
+                    const effect      = activeClip?.effect || 'none';
+                    const transition  = activeClip?.transition || 'none';
+                    const filter      = activeClip?.filter || 'none';
+                    const intensity   = activeClip?.filterIntensity ?? 100;
+                    const fitStyle    = activeClip?.fit || 'contain';
+                    
+                    let effectClass = '';
+                    if (effect === 'kenburns') effectClass = Math.floor(activeClip.startTime) % 2 === 0 ? 'effect-kenburns' : 'effect-kenburns2';
+                    else if (effect !== 'none') effectClass = `effect-${effect}`;
+
+                    let transClass = '';
+                    if (transition === 'fade') transClass = 'transition-fade';
+                    else if (transition === 'crossfade') transClass = 'transition-crossfade';
+                    else if (transition === 'wipeleft') transClass = 'transition-wipeleft';
+                    else if (transition === 'wiperight') transClass = 'transition-wiperight';
+                    else if (transition === 'slideleft') transClass = 'transition-slideleft';
+                    else if (transition === 'slideright') transClass = 'transition-slideright';
+                    else if (transition === 'slideup') transClass = 'transition-slideup';
+                    else if (transition === 'slidedown') transClass = 'transition-slidedown';
+                    else if (transition === 'fadeblack') transClass = 'transition-fadeblack';
+                    else if (transition === 'fadewhite') transClass = 'transition-fadewhite';
+                    else if (transition === 'dissolve') transClass = 'transition-dissolve';
+                    
+                    let filterStyle = 'none';
+                    if (filter === 'grayscale') filterStyle = `grayscale(${intensity}%)`;
+                    if (filter === 'sepia') filterStyle = `sepia(${intensity}%)`;
+                    if (filter === 'blur') filterStyle = `blur(${intensity / 10}px)`; // 0 a 10px
+                    if (filter === 'contrast') filterStyle = `contrast(${100 + intensity}%)`; // 100% a 200%
+                    if (filter === 'saturate') filterStyle = `saturate(${100 + intensity * 2}%)`; // 100% a 300%
+                    if (filter === 'invert') filterStyle = `invert(${intensity}%)`;
+                    if (filter === 'huerotate') filterStyle = `hue-rotate(${intensity * 3.6}deg)`; // 0 a 360deg
+                    
+                    const transDur = activeClip?.transitionDuration ?? 0.8;
+
+                    return (
+                      <div key={activeClip?.id} className={transClass} style={{ width:'100%', height:'100%', '--trans-dur': `${transDur}s`, overflow: 'hidden' }}>
+                        <img src={previewSrc} alt="preview"
+                          className={effectClass}
+                          style={{ width:'100%', height:'100%', objectFit: fitStyle, filter: filterStyle }} />
+                      </div>
+                    );
+                  })()
+                ) : (
+                  <div style={{ color:'var(--muted)', textAlign:'center' }}>
+                    <div style={{ fontSize:32, marginBottom:8 }}>📺</div>
+                    <div style={{ fontFamily:'Share Tech Mono', fontSize:11 }}>SEM SINAL</div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mono" style={{ position:'absolute', top:10, right:12, background:'rgba(0,0,0,0.7)', padding:'3px 8px', fontSize:12, color:'var(--accent2)', borderRadius:2, zIndex: 10 }}>
+                {fmt(currentTime)}
+              </div>
             </div>
           </div>
         </div>
+
+        {/* ── PAINEL DIREITO (AJUSTES, EFEITOS, FILTROS, TRANSIÇÕES, ÁUDIO) ── */}
+        <div className="hud-box" style={{ width:260, display:'flex', flexDirection:'column', borderRadius:0, borderTop:'none', borderRight:'none', borderBottom:'none' }}>
+          <div style={{ display:'flex', flexWrap:'wrap', borderBottom:'1px solid var(--border)', background:'var(--bg)' }}>
+            {['Ajustes', 'Efeitos', 'Filtros', 'Transições', 'Áudio'].map(tab => (
+              <button 
+                key={tab}
+                style={{ 
+                  flex:'1 1 30%', 
+                  padding:'8px 0px', 
+                  fontSize:10, 
+                  border:'none', 
+                  borderBottom: rightPanelTab === tab ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: rightPanelTab === tab ? 'var(--text)' : 'var(--muted)',
+                  background: rightPanelTab === tab ? 'var(--panel)' : 'transparent',
+                  cursor: 'pointer',
+                  fontFamily: 'Rajdhani',
+                  fontWeight: 600,
+                  transition: 'all 0.2s',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.5
+                }}
+                onClick={() => setRightPanelTab(tab)}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'16px' }}>
+            {!selectedClip ? (
+              <div style={{ color:'var(--muted)', fontSize:12, textAlign:'center', marginTop:20 }}>
+                Selecione um clip na timeline para editar.
+              </div>
+            ) : (
+              <>
+                {/* GUIA AJUSTES */}
+                {rightPanelTab === 'Ajustes' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+                    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                      <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>DURAÇÃO DO CLIP (Segundos)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <input type="number" min="0.1" step="0.1"
+                          value={Number(selectedClip.duration).toFixed(1)}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value);
+                            if (!isNaN(val) && val > 0) updateDurationAndRipple(selectedId, val);
+                          }}
+                          style={{ width: '60px', background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)', padding: '6px 8px', borderRadius: 3, fontFamily: 'Share Tech Mono', fontSize: 13 }}
+                        />
+                        <button className="btn btn-ghost" style={{ padding: '4px 8px', flex:1, fontSize: 11 }} onClick={() => updateDurationAndRipple(selectedId, Math.max(0.1, selectedClip.duration - 0.5))} title="Diminuir">- 0.5s</button>
+                        <button className="btn btn-ghost" style={{ padding: '4px 8px', flex:1, fontSize: 11 }} onClick={() => updateDurationAndRipple(selectedId, selectedClip.duration + 0.5)} title="Aumentar">+ 0.5s</button>
+                      </div>
+                    </div>
+
+                    {selectedClip.trackId === 'video-1' && (
+                      <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                        <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>ENQUADRAMENTO DA IMAGEM</label>
+                        <select className="editor-select" value={selectedClip.fit || 'contain'} onChange={e => updateSelectedClip({ fit: e.target.value })}>
+                          <option value="contain">Ajustar (Mostra a imagem inteira)</option>
+                          <option value="cover">Preencher (Corta para cobrir a tela)</option>
+                        </select>
+                        <button className="btn btn-ghost" style={{ fontSize:11, marginTop:2, justifyContent:'center' }} onClick={() => applyToAllVideos({ fit: selectedClip.fit || 'contain' })}>✦ Aplicar a todos</button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* GUIA EFEITOS */}
+                {rightPanelTab === 'Efeitos' && selectedClip.trackId === 'video-1' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>EFEITO DE CÂMARA</label>
+                    <select className="editor-select" value={selectedClip.effect || 'none'} onChange={e => updateSelectedClip({ effect: e.target.value })}>
+                      <option value="none">Nenhum (Estático)</option>
+                      <option value="kenburns">Ken Burns (Zoom/Pan Suave)</option>
+                      <option value="zoom_in">Zoom In Rápido</option>
+                      <option value="pan_right">Pan para a Direita</option>
+                      <option value="pan_left">Pan para a Esquerda</option>
+                    </select>
+                    <button className="btn btn-ghost" style={{ fontSize:11, marginTop:8, justifyContent:'center' }} onClick={() => applyToAllVideos({ effect: selectedClip.effect })}>✦ Aplicar a todos</button>
+                  </div>
+                )}
+                {rightPanelTab === 'Efeitos' && selectedClip.trackId !== 'video-1' && (
+                  <div style={{ color:'var(--muted)', fontSize:11, textAlign:'center' }}>Opção não disponível para áudio.</div>
+                )}
+
+                {/* GUIA FILTROS */}
+                {rightPanelTab === 'Filtros' && selectedClip.trackId === 'video-1' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>FILTRO DE COR</label>
+                    <select className="editor-select" value={selectedClip.filter || 'none'} onChange={e => updateSelectedClip({ filter: e.target.value })}>
+                      <option value="none">Original</option>
+                      <option value="grayscale">Preto e Branco</option>
+                      <option value="sepia">Sépia (Vintage)</option>
+                      <option value="blur">Desfoque (Blur)</option>
+                      <option value="contrast">Alto Contraste</option>
+                      <option value="saturate">Saturação (Cores Vibrantes)</option>
+                      <option value="vignette">Vinheta Dramática</option>
+                      <option value="invert">Negativo (Visão Raio-X)</option>
+                      <option value="huerotate">Matiz Alienígena</option>
+                      <option value="grain">Granulado (Film Grain)</option>
+                    </select>
+                    
+                    {selectedClip.filter && selectedClip.filter !== 'none' && (
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                          <span>INTENSIDADE</span>
+                          <span className="mono">{selectedClip.filterIntensity ?? 100}%</span>
+                        </label>
+                        <input type="range" min="0" max="100" step="1" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
+                          value={selectedClip.filterIntensity ?? 100}
+                          onChange={e => updateSelectedClip({ filterIntensity: parseInt(e.target.value, 10) })}
+                        />
+                      </div>
+                    )}
+                    
+                    <button className="btn btn-ghost" style={{ fontSize:11, marginTop:8, justifyContent:'center' }} onClick={() => applyToAllVideos({ filter: selectedClip.filter, filterIntensity: selectedClip.filterIntensity ?? 100 })}>✦ Aplicar a todos</button>
+                  </div>
+                )}
+                {rightPanelTab === 'Filtros' && selectedClip.trackId !== 'video-1' && (
+                  <div style={{ color:'var(--muted)', fontSize:11, textAlign:'center' }}>Opção não disponível para áudio.</div>
+                )}
+
+                {/* GUIA TRANSIÇÕES */}
+                {rightPanelTab === 'Transições' && selectedClip.trackId === 'video-1' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>TRANSIÇÃO DE ENTRADA</label>
+                    <select className="editor-select" value={selectedClip.transition || 'none'} onChange={e => updateSelectedClip({ transition: e.target.value })}>
+                      <option value="none">Corte Seco</option>
+                      <option value="dissolve">Dissolver (Misturar)</option>
+                      <option value="fadeblack">Mergulho no Preto (Fade Black)</option>
+                      <option value="fadewhite">Clarão Branco (Fade White)</option>
+                      <option value="crossfade">Crossfade Suave</option>
+                      <option value="slideleft">Deslizar Esquerda</option>
+                      <option value="slideright">Deslizar Direita</option>
+                      <option value="slideup">Deslizar Cima</option>
+                      <option value="slidedown">Deslizar Baixo</option>
+                      <option value="wipeleft">Wipe Esquerda</option>
+                      <option value="wiperight">Wipe Direita</option>
+                    </select>
+
+                    {selectedClip.transition && selectedClip.transition !== 'none' && (
+                      <div style={{ marginTop: 8 }}>
+                        <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                          <span>DURAÇÃO DA TRANSIÇÃO</span>
+                          <span className="mono">{selectedClip.transitionDuration ?? 0.8}s</span>
+                        </label>
+                        <input type="range" min="0.1" max="3.0" step="0.1" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
+                          value={selectedClip.transitionDuration ?? 0.8}
+                          onChange={e => updateSelectedClip({ transitionDuration: parseFloat(e.target.value) })}
+                        />
+                      </div>
+                    )}
+
+                    <button className="btn btn-ghost" style={{ fontSize:11, marginTop:8, justifyContent:'center' }} onClick={() => applyToAllVideos({ transition: selectedClip.transition, transitionDuration: selectedClip.transitionDuration ?? 0.8 })}>✦ Aplicar a todos</button>
+                  </div>
+                )}
+                {rightPanelTab === 'Transições' && selectedClip.trackId !== 'video-1' && (
+                  <div style={{ color:'var(--muted)', fontSize:11, textAlign:'center' }}>Transições apenas aplicáveis em vídeo.</div>
+                )}
+
+                {/* GUIA ÁUDIO */}
+                {rightPanelTab === 'Áudio' && (
+                  <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+                    <div>
+                      <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                        <span>VOLUME GLOBAL</span>
+                        <span className="mono">{Math.round((volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)) * 100)}%</span>
+                      </label>
+                      <input type="range" min="0" max="1" step="0.05" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
+                        value={volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
+                        onChange={e => {
+                          const v = parseFloat(e.target.value);
+                          setVolumes(p => ({ ...p, [selectedId]: v }));
+                          if (selectedClip.trackId === 'audio-1' && narrationRef.current) narrationRef.current.volume = v;
+                          if (selectedClip.trackId === 'audio-2' && bgmRef.current) bgmRef.current.volume = v;
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                        <span>FADE IN (Início)</span>
+                        <span className="mono">{selectedClip.fadeIn || 0}s</span>
+                      </label>
+                      <input type="range" min="0" max="5" step="0.5" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
+                        value={selectedClip.fadeIn || 0}
+                        onChange={e => updateSelectedClip({ fadeIn: parseFloat(e.target.value) })}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                        <span>FADE OUT (Fim)</span>
+                        <span className="mono">{selectedClip.fadeOut || 0}s</span>
+                      </label>
+                      <input type="range" min="0" max="5" step="0.5" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
+                        value={selectedClip.fadeOut || 0}
+                        onChange={e => updateSelectedClip({ fadeOut: parseFloat(e.target.value) })}
+                      />
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
       </div>
 
       {/* ── TIMELINE ── */}
       <div style={{ height:220, background:'var(--surface)', borderTop:'1px solid var(--border)', display:'flex', flexDirection:'column', flexShrink:0 }}>
 
         {/* controles */}
-        <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', gap:8, background:'var(--bg)' }}>
-          <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={past.length === 0} onClick={undo} title="Desfazer (Ctrl+Z)">⟲</button>
-          <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={future.length === 0} onClick={redo} title="Refazer (Ctrl+Y)">⟳</button>
-          <div style={{ width:1, height:20, background:'var(--border)', margin:'0 4px' }}/>
-          <button className="btn btn-ghost" style={{ padding:'4px 8px' }} onClick={() => { setIsPlaying(false); setCurrentTime(0); if(narrationRef.current){narrationRef.current.pause();narrationRef.current.currentTime=0;} if(bgmRef.current){bgmRef.current.pause();bgmRef.current.currentTime=0;} }}>⏮</button>
-          <button className="btn btn-ghost" style={{ padding:'4px 10px' }} onClick={() => setIsPlaying(p => !p)}>
-            {isPlaying ? '⏸' : '▶'}
-          </button>
-          {selectedClip && selectedClip.trackId !== 'video-1' && (
-            <div style={{ display:'flex', alignItems:'center', gap:6, background:'var(--panel)', padding:'2px 8px', borderRadius:2, border:'1px solid var(--border)' }}>
-              <span style={{ fontSize:11, color:'#9ab8d4' }}>🔊</span>
-              <input type="range" min="0" max="1" step="0.05"
-                value={volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
-                onChange={e => {
-                  const v = parseFloat(e.target.value);
-                  setVolumes(p => ({ ...p, [selectedId]: v }));
-                  if (selectedClip.trackId === 'audio-1' && narrationRef.current) narrationRef.current.volume = v;
-                  if (selectedClip.trackId === 'audio-2' && bgmRef.current) bgmRef.current.volume = v;
-                }}
-                style={{ width:70, accentColor:'var(--accent2)' }}
-              />
-              <span className="mono" style={{ fontSize:10, color:'#9ab8d4', minWidth:28 }}>
-                {Math.round((volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)) * 100)}%
-              </span>
-            </div>
-          )}
-          {selectedClip && selectedClip.trackId === 'video-1' && (
-            <>
-              <div style={{ width:1, height:20, background:'var(--border)', margin:'0 4px' }}/>
-              <select value={selectedClip.transition} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,transition:e.target.value}:c))}
-                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
-                <option value="none">Sem transição</option>
-                <option value="fade">Fade</option>
-                <option value="zoom">Zoom</option>
-              </select>
-              <select value={selectedClip.effect} onChange={e => setClips(p => p.map(c => c.id===selectedId ? {...c,effect:e.target.value}:c))}
-                style={{ background:'var(--panel)', border:'1px solid var(--border)', color:'var(--text)', borderRadius:2, padding:'2px 4px', fontSize:11 }}>
-                <option value="none">Sem efeito</option>
-                <option value="kenburns">Ken Burns</option>
-              </select>
-              <button className="btn btn-ghost" style={{ fontSize:10, padding:'2px 6px' }}
-                title="Aplicar Ken Burns em TODAS as imagens"
-                onClick={() => setClips(p => p.map(c => c.trackId === 'video-1' ? {...c, effect:'kenburns'} : c))}>
-                ✦ Todas
-              </button>
-            </>
-          )}
-          <div style={{ display:'flex', alignItems:'center', gap:6, marginLeft:'auto' }}>
-            {/* Snap toggle */}
-            <button className={`btn ${snapOn ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ padding:'4px 8px', fontSize:11 }}
-              onClick={() => setSnapOn(p => !p)}
-              title="Snap automático (S)">
-              🧲 {snapOn ? 'ON' : 'OFF'}
+        <div style={{ height:38, borderBottom:'1px solid var(--border)', display:'flex', alignItems:'center', padding:'0 10px', background:'var(--bg)' }}>
+          
+          {/* Esquerda: Ferramentas de Histórico */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, flex:1 }}>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={past.length === 0} onClick={undo} title="Desfazer (Ctrl+Z)">⟲</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:14 }} disabled={future.length === 0} onClick={redo} title="Refazer (Ctrl+Y)">⟳</button>
+          </div>
+
+          {/* Centro: Playback (Play, Pause, Stop) */}
+          <div style={{ display:'flex', alignItems:'center', gap:8, justifyContent:'center' }}>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px' }} title="Stop / Início" onClick={() => { setIsPlaying(false); setCurrentTime(0); if(narrationRef.current){narrationRef.current.pause();narrationRef.current.currentTime=0;} if(bgmRef.current){bgmRef.current.pause();bgmRef.current.currentTime=0;} }}>⏮</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 10px' }} title="Play / Pause" onClick={() => setIsPlaying(p => !p)}>
+              {isPlaying ? '⏸' : '▶'}
             </button>
+          </div>
 
-            {/* Zoom controls */}
-            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }}
-              onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} title="Zoom out (Ctrl+-)">−</button>
-            <span className="mono" style={{ fontSize:10, color:'#9ab8d4', minWidth:32, textAlign:'center' }}>
-              {Math.round(zoom * 100)}%
-            </span>
-            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }}
-              onClick={() => setZoom(z => Math.min(z + 0.25, 4))} title="Zoom in (Ctrl++)">+</button>
-            <button className="btn btn-ghost" style={{ padding:'4px 6px', fontSize:10 }}
-              onClick={() => setZoom(1)} title="Reset zoom">↺</button>
-
+          {/* Direita: Ferramentas de Timeline */}
+          <div style={{ display:'flex', alignItems:'center', gap:6, flex:1, justifyContent:'flex-end' }}>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }} onClick={() => {
+              setPast(p => [...p, clips]); setFuture([]);
+              setClips(prev => {
+                let t = 0;
+                return [...prev].sort((a,b) => a.startTime - b.startTime).map(c => {
+                  if (c.trackId === 'video-1') {
+                    const start = t;
+                    t += c.duration;
+                    return { ...c, startTime: start };
+                  }
+                  return c;
+                });
+              });
+            }} title="Juntar todas as cenas (Remover espaços vazios na linha de vídeo)">&gt;&lt; Juntar</button>
             <div style={{ width:1, height:20, background:'var(--border)' }}/>
-
-            {/* Fullscreen */}
-            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }}
-              onClick={() => setFullscreen(p => !p)} title="Tela cheia (F)">⛶</button>
-
-            {/* Delete */}
-            <button className="btn btn-danger" style={{ padding:'4px 8px' }} disabled={!selectedId}
-              onClick={() => { setClips(p => p.filter(c => c.id !== selectedId)); setSelectedId(null); }}>
-              🗑
-            </button>
+            <button className={`btn ${snapOn ? 'btn-primary' : 'btn-ghost'}`} style={{ padding:'4px 8px', fontSize:11 }} onClick={() => setSnapOn(p => !p)} title="Ímã Automático (S)">🧲 {snapOn ? 'ON' : 'OFF'}</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }} onClick={() => setZoom(z => Math.max(z - 0.25, 0.25))} title="Zoom out (Ctrl+-)">−</button>
+            <span className="mono" style={{ fontSize:10, color:'var(--muted)', minWidth:32, textAlign:'center' }}>{Math.round(zoom * 100)}%</span>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }} onClick={() => setZoom(z => Math.min(z + 0.25, 4))} title="Zoom in (Ctrl++)">+</button>
+            <button className="btn btn-ghost" style={{ padding:'4px 6px', fontSize:10 }} onClick={() => setZoom(1)} title="Reset zoom">↺</button>
+            <div style={{ width:1, height:20, background:'var(--border)' }}/>
+            <button className="btn btn-ghost" style={{ padding:'4px 8px', fontSize:11 }} onClick={() => setFullscreen(p => !p)} title="Tela cheia (F)">⛶</button>
+            <button className="btn btn-danger" style={{ padding:'4px 8px' }} disabled={!selectedId} onClick={() => { 
+              setPast(p => [...p, clips]); setFuture([]); 
+              setClips(prev => {
+                const clipToDelete = prev.find(c => c.id === selectedId);
+                let nextClips = prev.filter(c => c.id !== selectedId);
+                if (clipToDelete && snapOn) {
+                  const delta = -clipToDelete.duration;
+                  nextClips = nextClips.map(c => {
+                    if (c.trackId === clipToDelete.trackId && c.startTime > clipToDelete.startTime) {
+                      return { ...c, startTime: Math.max(0, c.startTime + delta) };
+                    }
+                    return c;
+                  });
+                }
+                return nextClips;
+              });
+              setSelectedId(null); 
+            }}>🗑</button>
           </div>
         </div>
 
@@ -1322,7 +1721,7 @@ function App() {
             <div style={{ height:22, borderBottom:'1px solid var(--border)', background:'var(--bg)' }}/>
             {TRACKS.map(t => (
               <div key={t.id} className="track-row" style={{ display:'flex', alignItems:'center', paddingLeft:10, background:t.color }}>
-                <span style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:0.5, color:'#b0c8e0', fontWeight:600 }}>{t.name}</span>
+                <span style={{ fontFamily:'Rajdhani', fontSize:12, letterSpacing:0.5, color:'var(--text)', fontWeight:600 }}>{t.name}</span>
               </div>
             ))}
           </div>
@@ -1340,7 +1739,7 @@ function App() {
               <div style={{ height:22, background:'var(--bg)', borderBottom:'1px solid var(--border)', position:'relative' }}>
                 {Array.from({ length: Math.ceil(duration) }).map((_,i) => (
                   <div key={i} style={{ position:'absolute', left: i * PPS * zoom, height:'100%', borderLeft:'1px solid var(--border)', paddingLeft:3 }}>
-                    {(i % Math.max(1, Math.round(5/zoom)) === 0) && <span className="mono" style={{ fontSize:9, color:'#7090b0' }}>{i}s</span>}
+                    {(i % Math.max(1, Math.round(5/zoom)) === 0) && <span className="mono" style={{ fontSize:9, color:'var(--muted)' }}>{i}s</span>}
                   </div>
                 ))}
               </div>
@@ -1361,6 +1760,7 @@ function App() {
                     return (
                       <div key={clip.id}
                            onMouseDown={e => onClipMouseDown(e, clip.id, 'move')}
+                           onClick={e => e.stopPropagation()}
                            style={{
                              position:'absolute', top:3, bottom:3,
                              left: clip.startTime * PPS * zoom,
@@ -1372,19 +1772,22 @@ function App() {
                            }}>
                         {/* resize left */}
                         <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-left'); }}
-                             style={{ position:'absolute', left:0, top:0, bottom:0, width:6, cursor:'w-resize', background:'rgba(0,212,255,0.2)' }}/>
+                             style={{ position:'absolute', left:0, top:0, bottom:0, width:12, cursor:'ew-resize', display:'flex', alignItems:'center', justifyContent:'flex-start', paddingLeft: 2, zIndex:5 }}>
+                          <div style={{ width: 3, height: 16, borderLeft: isSelected ? '1px solid var(--accent2)' : '1px solid rgba(255,255,255,0.4)', borderRight: isSelected ? '1px solid var(--accent2)' : '1px solid rgba(255,255,255,0.4)' }} />
+                        </div>
+
                         {(() => {
                           const media = library.find(m => m.id === clip.mediaId);
                           const isAud = track.type === 'audio';
                           return (
-                            <div style={{ display:'flex', alignItems:'center', height:'100%', overflow:'hidden', position:'relative' }}>
+                            <div style={{ display:'flex', alignItems:'center', height:'100%', overflow:'hidden', position:'relative', padding: '0 14px' }}>
                               {/* Waveform para áudio */}
                               {isAud && (
                                 <div style={{ position:'absolute', inset:0, display:'flex', alignItems:'center', gap:1, padding:'2px 4px', opacity:0.4 }}>
                                   {Array.from({length: Math.min(80, Math.floor(clip.duration * PPS * zoom / 4))}).map((_,i) => (
                                     <div key={i} style={{
                                       width:2, flexShrink:0,
-                                      height: `${25 + Math.sin(i * 0.8) * 15 + Math.sin(i * 2.1) * 10 + Math.sin(i * 5.3) * 5}%`,
+                                      height: `${20 + Math.sin(i * 0.8) * 15 + Math.sin(i * 2.1) * 10 + Math.random() * 5}%`,
                                       background: isSelected ? '#00c875' : 'rgba(0,200,117,0.8)',
                                       borderRadius:1,
                                     }}/>
@@ -1396,15 +1799,23 @@ function App() {
                                 <img src={media.url} alt=""
                                   style={{ height:'100%', width:'auto', maxWidth:40, objectFit:'cover', opacity:0.8, flexShrink:0 }}/>
                               )}
-                              <span style={{ padding:'2px 6px', fontSize:10, color:'#ffffff', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', position:'relative', zIndex:1, textShadow:'0 1px 3px rgba(0,0,0,0.8)' }}>
+                              <span style={{ padding:'2px 6px', fontSize:10, color:'var(--text)', fontFamily:'Rajdhani', fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', position:'relative', zIndex:1, textShadow: theme === 'dark' ? '0 1px 3px rgba(0,0,0,0.8)' : '0 1px 3px rgba(255,255,255,0.8)' }}>
                                 {media?.name || '—'}
                               </span>
                             </div>
                           );
                         })()}
+
+                        {/* Indicador de Transição */}
+                        {!isAudio && clip.transition && clip.transition !== 'none' && (
+                          <div style={{ position:'absolute', right:0, top:0, bottom:0, width:12, background:'rgba(0,212,255,0.3)', borderLeft:'1px dashed var(--accent2)', zIndex:2 }} title={`Transição: ${clip.transition}`} />
+                        )}
+
                         {/* resize right */}
                         <div onMouseDown={e => { e.stopPropagation(); onClipMouseDown(e, clip.id, 'resize-right'); }}
-                             style={{ position:'absolute', right:0, top:0, bottom:0, width:6, cursor:'e-resize', background:'rgba(0,212,255,0.2)' }}/>
+                             style={{ position:'absolute', right:0, top:0, bottom:0, width:12, cursor:'ew-resize', display:'flex', alignItems:'center', justifyContent:'flex-end', paddingRight: 2, zIndex:5 }}>
+                          <div style={{ width: 3, height: 16, borderLeft: isSelected ? '1px solid var(--accent2)' : '1px solid rgba(255,255,255,0.4)', borderRight: isSelected ? '1px solid var(--accent2)' : '1px solid rgba(255,255,255,0.4)' }} />
+                        </div>
                       </div>
                     );
                   })}
@@ -1421,7 +1832,7 @@ function App() {
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: ENVIAR AO MOTOR
+            MODAL: ENVIAR AO MOTOR
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'ai' && (
         <div className="modal-overlay" onClick={() => !aiStatus.running && setModal(null)}>
@@ -1432,7 +1843,11 @@ function App() {
             </div>
             <div className="modal-body">
 
-
+              {!driveReady && (
+                <div style={{ color:'var(--danger)', fontSize:13, marginBottom:14, padding:'8px 12px', background:'rgba(224,64,64,0.1)', borderRadius:3, border:'1px solid rgba(224,64,64,0.3)' }}>
+                  ⚠ Drive ainda não conectado. Aguarde...
+                </div>
+              )}
 
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:14 }}>
                 {/* áudio */}
@@ -1504,7 +1919,7 @@ function App() {
               <div style={{ display:'flex', justifyContent:'flex-end', gap:8 }}>
                 <button className="btn btn-ghost" onClick={() => setModal(null)} disabled={aiStatus.running}>Cancelar</button>
                 <button className="btn btn-gold"
-                  disabled={!aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0 || aiStatus.running}
+                  disabled={!driveReady || !aiFiles.audio || !aiFiles.roteiro || aiFiles.images.length === 0 || aiStatus.running}
                   onClick={enviaJob}>
                   {aiStatus.running ? '⟳ Enviando...' : '✦ Enviar ao Motor'}
                 </button>
@@ -1515,7 +1930,7 @@ function App() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: JOBS
+            MODAL: JOBS
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'jobs' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
@@ -1564,7 +1979,7 @@ function App() {
       )}
 
       {/* ══════════════════════════════════════════════════════════════════
-           MODAL: EXPORTAR
+            MODAL: EXPORTAR
       ══════════════════════════════════════════════════════════════════ */}
       {modal === 'export' && (
         <div className="modal-overlay" onClick={() => setModal(null)}>
@@ -1655,7 +2070,7 @@ function App() {
                     }
 
                     
-                    // Envia timeline.json com os tempos e efeitos atuais
+                    // Envia timeline.json com os tempos, efeitos e filtros atuais
                     const tlData = {
                       tipo: 'render',
                       duracao_total: duration,
@@ -1667,11 +2082,17 @@ function App() {
                           start:      clip.startTime,
                           end:        clip.startTime + clip.duration,
                           duration:   clip.duration,
+                          fit:        clip.fit || 'contain',
                           transition: clip.transition || 'none',
+                          transition_duration: clip.transitionDuration ?? 0.8,
                           effect:     clip.effect || 'none',
+                          filter:     clip.filter || 'none',
+                          filter_intensity: clip.filterIntensity ?? 100
                         };
                       }),
                       audio: narClip ? ('audio.' + (library.find(m=>m.id===narClip.mediaId)?.name||'audio.mp3').split('.').pop()) : null,
+                      audio_fade_in: narClip ? (narClip.fadeIn || 0) : 0,
+                      audio_fade_out: narClip ? (narClip.fadeOut || 0) : 0,
                       bgm:   bgmClip ? ('bgm.'   + (library.find(m=>m.id===bgmClip.mediaId)?.name||'bgm.mp3').split('.').pop())   : null,
                     };
                     await driveApi.uploadJson(jobId, 'timeline_render.json', tlData);
