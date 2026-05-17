@@ -254,6 +254,7 @@
     @keyframes fadewhite { from { filter: brightness(10); } to { filter: brightness(1); } }
     @keyframes dissolve { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
 
+    /* FILTROS DE PARTICULAS (CSS OVERLAYS) */
     @keyframes grain_dance {
       0% { transform: translate(0, 0); }
       20% { transform: translate(-2%, 2%); }
@@ -262,30 +263,84 @@
       80% { transform: translate(2%, 2%); }
       100% { transform: translate(0, 0); }
     }
-
     .wrapper-grain::after {
-      content: "";
-      position: absolute;
-      inset: -20%;
-      width: 140%;
-      height: 140%;
+      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
-      opacity: var(--grain-opacity, 0.4);
-      mix-blend-mode: overlay;
-      pointer-events: none;
-      z-index: 5;
+      opacity: calc(var(--filter-intensity) / 100); mix-blend-mode: overlay; pointer-events: none; z-index: 5;
       animation: grain_dance 0.4s steps(4) infinite;
     }
 
     .wrapper-vignette::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      box-shadow: inset 0 0 calc(var(--filter-intensity) * 2px) rgba(0,0,0, 0.9);
-      pointer-events: none;
-      z-index: 5;
+      content: ""; position: absolute; inset: 0;
+      box-shadow: inset 0 0 calc(var(--filter-intensity) * 2px) rgba(0,0,0, 0.9); pointer-events: none; z-index: 5;
     }
-    
+
+    .wrapper-rain::after {
+      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+      background-image: linear-gradient(transparent, rgba(255,255,255,0.7) 30%, transparent);
+      background-size: 4px 60px;
+      animation: anim_rain 0.2s linear infinite; transform: rotate(10deg); pointer-events: none; z-index: 5;
+      opacity: calc(var(--filter-intensity) / 100);
+    }
+    @keyframes anim_rain { to { background-position: 10px 200px; } }
+
+    .wrapper-snow::after {
+      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+      background-image: radial-gradient(circle, white 2px, transparent 3px), radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 2px);
+      background-size: 100px 100px, 50px 50px;
+      animation: anim_snow 3s linear infinite; pointer-events: none; z-index: 5;
+      opacity: calc(var(--filter-intensity) / 100);
+    }
+    @keyframes anim_snow { to { background-position: 50px 200px, 20px 100px; } }
+
+    .wrapper-stars::after {
+      content: ""; position: absolute; inset: 0; width: 100%; height: 100%;
+      background-image: radial-gradient(circle, white 1px, transparent 2px), radial-gradient(circle, rgba(255,255,255,0.8) 1.5px, transparent 2px);
+      background-size: 150px 150px, 90px 90px; background-position: 0 0, 40px 40px;
+      animation: pulse_stars 4s ease-in-out infinite; pointer-events: none; z-index: 5;
+      opacity: calc(var(--filter-intensity) / 100);
+    }
+    @keyframes pulse_stars { 0%, 100% { opacity: calc((var(--filter-intensity) / 100) * 0.5); } 50% { opacity: calc(var(--filter-intensity) / 100); } }
+
+    .wrapper-sparks::after {
+      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+      background-image: radial-gradient(circle, #ffdd55 2px, transparent 4px), radial-gradient(circle, #ff8800 1px, transparent 3px);
+      background-size: 120px 120px, 80px 80px;
+      animation: anim_sparks 2s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
+      opacity: calc(var(--filter-intensity) / 100);
+    }
+    @keyframes anim_sparks { to { background-position: -50px -200px, 30px -150px; } }
+
+    .wrapper-embers::after {
+      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+      background-image: radial-gradient(circle, #ff4400 3px, transparent 6px), radial-gradient(circle, #ff1100 2px, transparent 4px);
+      background-size: 150px 150px, 100px 100px;
+      animation: anim_embers 4s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
+      opacity: calc(var(--filter-intensity) / 100);
+    }
+    @keyframes anim_embers { 0% { background-position: 0 0, 0 0; } 50% { opacity: calc((var(--filter-intensity)/100)*0.5); } to { background-position: -30px -150px, 40px -100px; } }
+
+    .wrapper-dust::after, .wrapper-particles::after {
+       content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+       background-image: radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 2px), radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px);
+       background-size: 80px 80px, 60px 60px;
+       animation: anim_dust 15s linear infinite; pointer-events: none; z-index: 5;
+       opacity: calc(var(--filter-intensity) / 100);
+    }
+    .wrapper-particles::after { animation-duration: 8s; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 2px, transparent 3px); }
+    @keyframes anim_dust { to { background-position: 100px -50px, -50px 100px; } }
+
+    .wrapper-fog::after, .wrapper-smoke::after {
+      content: ""; position: absolute; inset: -50%; width: 200%; height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      animation: anim_fog 25s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
+      opacity: calc((var(--filter-intensity) / 100) * 0.5);
+    }
+    .wrapper-smoke::after {
+      animation-duration: 15s; mix-blend-mode: overlay; opacity: calc((var(--filter-intensity) / 100) * 0.4); filter: contrast(1.5);
+    }
+    @keyframes anim_fog { to { transform: translateX(-10%); } }
+
     .animate-fade      { animation: fadeIn 0.3s ease; }
     .transition-fade   { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
     .transition-zoom   { animation: zoom_in var(--trans-dur, 0.8s) ease-out; }
@@ -590,7 +645,6 @@ function App() {
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   // ── ENVIAR JOB PARA O MOTOR ─────────────────────────────────────────────────
-  // Autentica sob demanda — só quando realmente precisa do Drive
   const autenticaSeNecessario = () => new Promise((resolve, reject) => {
     if (authState === 'ok' && driveApi.token) { resolve(); return; }
     setAuthState('loading');
@@ -632,12 +686,12 @@ function App() {
       setAiStatus(p => ({ ...p, msg: 'Enviando roteiro...', pct: 36 }));
       await driveApi.uploadFile(jobId, aiFiles.roteiro, 'roteiro.txt');
 
-      // Upload imagens
+      // Upload imagens/vídeos
       for (let i = 0; i < aiFiles.images.length; i++) {
         const img = aiFiles.images[i];
         const ext = img.name.split('.').pop();
         const num = String(i + 1).padStart(4, '0');
-        setAiStatus(p => ({ ...p, msg: `Enviando imagem ${i+1}/${aiFiles.images.length}...`, pct: 38 + (i / aiFiles.images.length) * 40 }));
+        setAiStatus(p => ({ ...p, msg: `Enviando arquivo ${i+1}/${aiFiles.images.length}...`, pct: 38 + (i / aiFiles.images.length) * 40 }));
         await driveApi.uploadFile(jobId, img, `${num}.${ext}`);
       }
 
@@ -660,7 +714,7 @@ function App() {
       };
       await driveApi.uploadJson(jobId, 'job.json', jobJson);
 
-      // Popula a biblioteca com os arquivos já carregados — evita re-upload manual
+      // Popula a biblioteca
       const novasMedias = [];
 
       for (let i = 0; i < aiFiles.images.length; i++) {
@@ -694,7 +748,6 @@ function App() {
 
       if (novasMedias.length > 0) {
         setLibrary(prev => {
-          // Evita duplicatas pelo nome
           const existentes = new Set(prev.map(m => m.name.toLowerCase()));
           const novas = novasMedias.filter(m => !existentes.has(m.name.toLowerCase()));
           return [...prev, ...novas];
@@ -721,9 +774,7 @@ function App() {
       const newClips     = [];
       const extraLibrary = [];
 
-      // Usa setLibrary com callback para ter acesso à biblioteca atual
       setLibrary(prevLib => {
-        // Índice nome→id da biblioteca já carregada
         const byName = {};
         prevLib.forEach(m => { byName[m.name.toLowerCase()] = m.id; });
 
@@ -731,7 +782,6 @@ function App() {
           const nomeNorm = cena.arquivo.toLowerCase();
           let mediaId = byName[nomeNorm];
 
-          // Se não achou, cria placeholder para mostrar nome na timeline
           if (!mediaId) {
             mediaId = `placeholder-${i}-${Date.now()}`;
             extraLibrary.push({
@@ -752,7 +802,6 @@ function App() {
           });
         });
 
-        // Adiciona áudio automaticamente se estiver na biblioteca
         const audioMedia = prevLib.find(m => m.type && m.type.startsWith('audio'));
         if (audioMedia) {
           newClips.push({
@@ -774,7 +823,6 @@ function App() {
       setDuration(tl.duracao_total + 10);
       setCurrentTime(0);
 
-      const faltando = tl.cenas.filter(c => !document.querySelector(`[data-name="${c.arquivo}"]`)).length;
       const msg = extraLibrary.length > 0
         ? `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}\n\n⚠️ ${extraLibrary.length} imagens não encontradas na biblioteca.\nFaça upload pelo "+" para aparecerem no preview.`
         : `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}`;
@@ -785,7 +833,7 @@ function App() {
     }
   };
 
-  // ── DRAG & DROP TIMELINE ────────────────────────────────────────────────────
+  // ── DRAG & DROP TIMELINE & SNAP ─────────────────────────────────────────────
   const onClipMouseDown = (e, clipId, type) => {
     e.stopPropagation();
     const clip = clips.find(c => c.id === clipId);
@@ -795,15 +843,13 @@ function App() {
 
   const getSnapTarget = (time, excludeId) => {
     let target = time;
-    let minD = 1.5 / zoom; // Threshold responsivo ao zoom
+    let minD = 1.5 / zoom; 
     
-    // Snap ao início absoluto da timeline
     if (Math.abs(time) < minD) {
       minD = Math.abs(time);
       target = 0;
     }
     
-    // Snap a outros clips
     clips.forEach(c => {
       if (c.id === excludeId) return;
       [c.startTime, c.startTime + c.duration].forEach(t => {
@@ -812,7 +858,6 @@ function App() {
       });
     });
 
-    // Snap à agulha de reprodução (Playhead vermelha)
     if (Math.abs(time - currentTime) < minD) {
       minD = Math.abs(time - currentTime);
       target = currentTime;
@@ -834,8 +879,6 @@ function App() {
         if (!snapOn) return { ...c, startTime: rawStart };
 
         const rawEnd = rawStart + dragState.origDur;
-        
-        // Verifica o que está mais perto: o início do clip colar em algo, ou o fim do clip colar em algo
         const snapStart = getSnapTarget(rawStart, c.id);
         const snapEnd = getSnapTarget(rawEnd, c.id);
         
@@ -850,7 +893,7 @@ function App() {
       if (dragState.type === 'resize-right') {
         const rawEnd = dragState.origStart + dragState.origDur + delta;
         const finalEnd = snapOn ? getSnapTarget(rawEnd, c.id).target : rawEnd;
-        const nd = Math.max(0.1, finalEnd - dragState.origStart); // Bloqueia inversão de clip
+        const nd = Math.max(0.1, finalEnd - dragState.origStart); 
         return { ...c, duration: nd };
       }
       
@@ -858,7 +901,7 @@ function App() {
         const rawStart = Math.max(0, dragState.origStart + delta);
         const finalStart = snapOn ? getSnapTarget(rawStart, c.id).target : rawStart;
         const nd = Math.max(0.1, (dragState.origStart + dragState.origDur) - finalStart);
-        if (finalStart >= dragState.origStart + dragState.origDur - 0.1) return c; // Bloqueia inversão
+        if (finalStart >= dragState.origStart + dragState.origDur - 0.1) return c; 
         return { ...c, startTime: finalStart, duration: nd };
       }
       
@@ -877,7 +920,7 @@ function App() {
     setDragState(null);
   };
 
-  // ── PLAYBACK E ATUALIZAÇÃO ──────────────────────────────────────────────────
+  // ── PLAYBACK E ATUALIZAÇÃO (RIPPLE) ─────────────────────────────────────────
   const updateSelectedClip = (updates) => {
     setPast(p => [...p, clips]); setFuture([]);
     setClips(p => p.map(c => c.id === selectedId ? { ...c, ...updates } : c));
@@ -891,7 +934,6 @@ function App() {
       const delta = newDuration - target.duration;
       return prev.map(c => {
         if (c.id === id) return { ...c, duration: newDuration };
-        // Se for na mesma trilha e estiver posicionado depois do clip alterado, ajusta o tempo (Ripple)
         if (snapOn && c.trackId === target.trackId && c.startTime > target.startTime + 0.01) {
            return { ...c, startTime: Math.max(0, c.startTime + delta) };
         }
@@ -945,7 +987,6 @@ function App() {
         if (Math.abs(bgmRef.current.currentTime - expTime) > 0.3) {
           bgmRef.current.currentTime = Math.max(0, expTime);
         }
-        // Ducking: reduz BGM quando narração está tocando
         const narActive = clips.find(c => c.trackId === 'audio-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
         const bgmVol = volumes[bgmClip?.id] ?? 0.2;
         bgmRef.current.volume = narActive ? bgmVol * 0.3 : bgmVol;
@@ -965,7 +1006,6 @@ function App() {
         const delta = (now - lastRef.current) / 1000;
         lastRef.current = now;
         
-        // Calcula o final exato do último clipe na timeline
         const maxTime = clips.length > 0 ? Math.max(...clips.map(c => c.startTime + c.duration)) : duration;
 
         setCurrentTime(t => {
@@ -987,7 +1027,6 @@ function App() {
     return () => cancelAnimationFrame(animRef.current);
   }, [isPlaying, duration, clips]);
 
-  // Preview da imagem ativa
   useEffect(() => {
     const active = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
     if (active) {
@@ -1142,7 +1181,7 @@ function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedId, duration, clips, undo, redo]);
+  }, [selectedId, duration, clips, undo, redo, snapOn]);
 
   // ── TELA CHEIA ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1372,12 +1411,15 @@ function App() {
               
               <div 
                 className={
-                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'grain') ? 'wrapper-grain' : 
-                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'vignette') ? 'wrapper-vignette' : ''
+                  (() => {
+                    const activeF = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter;
+                    const overlays = ['grain', 'vignette', 'rain', 'snow', 'stars', 'sparks', 'embers', 'fog', 'smoke', 'dust', 'particles'];
+                    if (overlays.includes(activeF)) return `wrapper-${activeF}`;
+                    return '';
+                  })()
                 }
                 style={{ 
                   position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  '--grain-opacity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100) / 100,
                   '--filter-intensity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100)
                 }}
               >
@@ -1410,11 +1452,11 @@ function App() {
                     let filterStyle = 'none';
                     if (filter === 'grayscale') filterStyle = `grayscale(${intensity}%)`;
                     if (filter === 'sepia') filterStyle = `sepia(${intensity}%)`;
-                    if (filter === 'blur') filterStyle = `blur(${intensity / 10}px)`; // 0 a 10px
-                    if (filter === 'contrast') filterStyle = `contrast(${100 + intensity}%)`; // 100% a 200%
-                    if (filter === 'saturate') filterStyle = `saturate(${100 + intensity * 2}%)`; // 100% a 300%
+                    if (filter === 'blur') filterStyle = `blur(${intensity / 10}px)`; 
+                    if (filter === 'contrast') filterStyle = `contrast(${100 + intensity}%)`; 
+                    if (filter === 'saturate') filterStyle = `saturate(${100 + intensity * 2}%)`; 
                     if (filter === 'invert') filterStyle = `invert(${intensity}%)`;
-                    if (filter === 'huerotate') filterStyle = `hue-rotate(${intensity * 3.6}deg)`; // 0 a 360deg
+                    if (filter === 'huerotate') filterStyle = `hue-rotate(${intensity * 3.6}deg)`; 
                     
                     const transDur = activeClip?.transitionDuration ?? 0.8;
 
@@ -1528,18 +1570,31 @@ function App() {
                 {/* GUIA FILTROS */}
                 {rightPanelTab === 'Filtros' && selectedClip.trackId === 'video-1' && (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>FILTRO DE COR</label>
+                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>FILTRO DE COR E PARTÍCULAS</label>
                     <select className="editor-select" value={selectedClip.filter || 'none'} onChange={e => updateSelectedClip({ filter: e.target.value })}>
                       <option value="none">Original</option>
-                      <option value="grayscale">Preto e Branco</option>
-                      <option value="sepia">Sépia (Vintage)</option>
-                      <option value="blur">Desfoque (Blur)</option>
-                      <option value="contrast">Alto Contraste</option>
-                      <option value="saturate">Saturação (Cores Vibrantes)</option>
-                      <option value="vignette">Vinheta Dramática</option>
-                      <option value="invert">Negativo (Visão Raio-X)</option>
-                      <option value="huerotate">Matiz Alienígena</option>
-                      <option value="grain">Granulado (Film Grain)</option>
+                      <optgroup label="Cor">
+                        <option value="grayscale">Preto e Branco</option>
+                        <option value="sepia">Sépia (Vintage)</option>
+                        <option value="blur">Desfoque (Blur)</option>
+                        <option value="contrast">Alto Contraste</option>
+                        <option value="saturate">Saturação (Cores Vibrantes)</option>
+                        <option value="vignette">Vinheta Dramática</option>
+                        <option value="invert">Negativo (Visão Raio-X)</option>
+                        <option value="huerotate">Matiz Alienígena</option>
+                      </optgroup>
+                      <optgroup label="Overlays / Partículas">
+                        <option value="grain">Film Grain (Granulação Cinematográfica)</option>
+                        <option value="dust">Dust (Poeira Flutuando)</option>
+                        <option value="rain">Rain (Chuva Animada)</option>
+                        <option value="snow">Snow (Neve Caindo)</option>
+                        <option value="fog">Fog (Névoa Cobrindo a Cena)</option>
+                        <option value="smoke">Smoke (Fumaça Dinâmica)</option>
+                        <option value="sparks">Sparks (Faíscas Elétricas/Metálicas)</option>
+                        <option value="embers">Embers (Brasas Flutuando)</option>
+                        <option value="stars">Stars (Campo de Estrelas Espacial)</option>
+                        <option value="particles">Particles (Pequenas Partículas)</option>
+                      </optgroup>
                     </select>
                     
                     {selectedClip.filter && selectedClip.filter !== 'none' && (
@@ -1806,9 +1861,19 @@ function App() {
                           );
                         })()}
 
-                        {/* Indicador de Transição */}
-                        {!isAudio && clip.transition && clip.transition !== 'none' && (
-                          <div style={{ position:'absolute', right:0, top:0, bottom:0, width:12, background:'rgba(0,212,255,0.3)', borderLeft:'1px dashed var(--accent2)', zIndex:2 }} title={`Transição: ${clip.transition}`} />
+                        {/* Indicadores Visuais de Edição (Tags) */}
+                        {!isAudio && (
+                          <div style={{ position:'absolute', bottom:4, left:18, display:'flex', gap:3, zIndex:6 }}>
+                            {clip.effect && clip.effect !== 'none' && (
+                              <span style={{ background:'var(--gold)', color:'#000', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Efeito: ${clip.effect}`}>E</span>
+                            )}
+                            {clip.filter && clip.filter !== 'none' && (
+                              <span style={{ background:'var(--accent2)', color:'#000', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Filtro: ${clip.filter}`}>F</span>
+                            )}
+                            {clip.transition && clip.transition !== 'none' && (
+                              <span style={{ background:'var(--accent)', color:'#fff', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Transição: ${clip.transition}`}>T</span>
+                            )}
+                          </div>
                         )}
 
                         {/* resize right */}
@@ -1870,14 +1935,14 @@ function App() {
                   <input type="file" accept=".txt" style={{ display:'none' }} onChange={e => handleFiles(e,'roteiro')}/>
                 </label>
 
-                {/* imagens */}
+                {/* imagens / videos */}
                 <label className={`upload-slot ${aiFiles.images.length > 0 ? 'done' : ''}`}>
-                  <div className="upload-slot-icon" style={{ color: aiFiles.images.length > 0 ? 'var(--success)' : 'var(--muted)' }}>🖼️</div>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.images.length > 0 ? 'var(--success)' : 'var(--muted)' }}>🎬</div>
                   <div className="upload-slot-info">
-                    <div className="upload-slot-label">IMAGENS *</div>
-                    <div className="upload-slot-name">{aiFiles.images.length > 0 ? `${aiFiles.images.length} imagens` : 'Selecionar todas'}</div>
+                    <div className="upload-slot-label">CENAS (IMG/VÍDEO) *</div>
+                    <div className="upload-slot-name">{aiFiles.images.length > 0 ? `${aiFiles.images.length} arquivos` : 'Selecionar'}</div>
                   </div>
-                  <input type="file" multiple accept="image/*" style={{ display:'none' }} onChange={e => handleFiles(e,'images')}/>
+                  <input type="file" multiple accept="image/*,video/*" style={{ display:'none' }} onChange={e => handleFiles(e,'images')}/>
                 </label>
 
                 {/* bgm */}
@@ -2025,7 +2090,6 @@ function App() {
                     const jobName = `render_${Date.now()}`;
                     const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
 
-                    // Usa fileCache para enviar arquivos originais sem fetch de blob
                     const getFile = async (media, nomeSaida) => {
                       const cached = fileCache.current[media.name];
                       if (cached) return new File([cached], nomeSaida || media.name, { type: cached.type });
@@ -2069,8 +2133,7 @@ function App() {
                       }
                     }
 
-                    
-                    // Envia timeline.json com os tempos, efeitos e filtros atuais
+                    // Envia timeline.json
                     const tlData = {
                       tipo: 'render',
                       duracao_total: duration,
@@ -2114,89 +2177,130 @@ function App() {
                 🚀 Renderizar no Colab (Motor de Dobra)
               </button>
 
-              {/* Renderizar no Navegador FFmpeg */}
+              {/* Renderizar no Navegador FFmpeg (Local Simples) */}
               <button className="btn btn-ghost" style={{ justifyContent:'center', padding:'10px' }}
                 disabled={renderState.isRendering}
                 onClick={async () => {
                   const videoClips = clips.filter(c => c.trackId === 'video-1').sort((a,b) => a.startTime - b.startTime);
                   const narClip    = clips.find(c => c.trackId === 'audio-1');
-                  if (videoClips.length === 0) { alert('Nenhuma imagem na timeline.'); return; }
+                  const bgmClip    = clips.find(c => c.trackId === 'audio-2');
+                  
+                  if (videoClips.length === 0) { alert('Nenhuma cena na timeline.'); return; }
 
-                  setRenderState({ isRendering: true, progress: 0, status: 'Carregando FFmpeg...' });
+                  setRenderState({ isRendering: true, progress: 0, status: 'Carregando motor de renderização local...' });
                   let ffmpeg = null;
+                  
                   try {
-                    const { FFmpeg } = await import('https://esm.sh/@ffmpeg/ffmpeg@0.12.10');
+                    const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
                     ffmpeg = new FFmpeg();
-                    const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
-                    const fb   = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm';
+                    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
 
-                    setRenderState(p => ({ ...p, status: 'Baixando motor FFmpeg...' }));
-                    const [coreURL, wasmURL] = await Promise.all([
-                      fetch(`${base}/ffmpeg-core.js`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
-                      fetch(`${base}/ffmpeg-core.wasm`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
-                    ]);
-                    const workerText = await fetch(`${fb}/worker.js`).then(r=>r.text());
-                    const workerURL  = URL.createObjectURL(new Blob([workerText],{type:'text/javascript'}));
-
-                    await ffmpeg.load({ coreURL, wasmURL, classWorkerURL: workerURL });
+                    setRenderState(p => ({ ...p, status: 'Baixando núcleos do FFmpeg local...' }));
+                    
+                    await ffmpeg.load({
+                        coreURL: await fetch(`${baseURL}/ffmpeg-core.js`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
+                        wasmURL: await fetch(`${baseURL}/ffmpeg-core.wasm`).then(r=>r.blob()).then(b=>URL.createObjectURL(b))
+                    });
 
                     ffmpeg.on('log', ({ message }) => {
-                      const m = message.match(/time=(\d{2}):(\d{2}):(\d{2})/);
+                      const m = message.match(/time=\s*(\d{2}):(\d{2}):(\d{2})/);
                       if (m) {
                         const t = parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]);
-                        setRenderState(p => ({ ...p, progress: Math.min(99, Math.round(t/duration*100)), status: `Renderizando: ${Math.min(99,Math.round(t/duration*100))}%` }));
+                        setRenderState(p => ({ ...p, progress: Math.min(99, Math.round((t/duration)*100)), status: `Renderizando localmente: ${Math.min(99,Math.round((t/duration)*100))}%` }));
                       }
                     });
 
-                    let listTxt = '';
+                    let cmd = [];
+                    let filterParts = [];
+                    
+                    // Escreve os arquivos das cenas
                     for (let i = 0; i < videoClips.length; i++) {
                       const clip  = videoClips[i];
                       const media = library.find(m => m.id === clip.mediaId);
                       if (!media?.url) continue;
-                      setRenderState(p => ({ ...p, status: `Preparando imagem ${i+1}/${videoClips.length}...` }));
-                      const ext   = media.name.split('.').pop() || 'jpg';
-                      const fname = `img${i}.${ext}`;
+                      
+                      setRenderState(p => ({ ...p, status: `Preparando cena ${i+1}/${videoClips.length}...` }));
+                      
+                      const ext   = media.name.split('.').pop().toLowerCase() || 'jpg';
+                      const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(ext);
+                      const fname = `cena${i}.${ext}`;
+                      
                       const cached = fileCache.current[media.name];
                       const buf   = cached ? await cached.arrayBuffer() : await fetch(media.url).then(r=>r.arrayBuffer());
                       await ffmpeg.writeFile(fname, new Uint8Array(buf));
-                      const next = videoClips[i+1];
-                      const dur  = next ? (next.startTime - clip.startTime) : (duration - clip.startTime);
-                      listTxt += `file '${fname}'\nduration ${Math.max(0.1, dur).toFixed(3)}\n`;
+                      
+                      const dur = clip.duration;
+                      
+                      if (!isVideo) {
+                         cmd.push('-loop', '1', '-framerate', '24', '-t', String(dur + 0.1), '-i', fname);
+                      } else {
+                         cmd.push('-t', String(dur), '-i', fname);
+                      }
+                      
+                      // Prepara o filtro para padronizar resoluções de fotos e vídeos mistos no navegador
+                      const fit = clip.fit || 'contain';
+                      let scaleStr = fit === 'cover' 
+                         ? `scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080` 
+                         : `scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black`;
+                         
+                      filterParts.push(`[${i}:v]trim=duration=${dur},setpts=PTS-STARTPTS,${scaleStr},format=yuv420p,setsar=1,fps=24[v${i}]`);
                     }
-                    const lastClip  = videoClips[videoClips.length-1];
-                    const lastMedia = library.find(m => m.id === lastClip.mediaId);
-                    if (lastMedia?.url) {
-                      const ext = lastMedia.name.split('.').pop() || 'jpg';
-                      listTxt += `file 'img${videoClips.length-1}.${ext}'\n`;
-                    }
-                    await ffmpeg.writeFile('list.txt', new TextEncoder().encode(listTxt));
-
-                    let cmd = ['-f','concat','-safe','0','-i','list.txt'];
-                    let filterParts = [];
-
+                    
+                    // Concatena todos os vídeos processados (versão leve sem efeitos pesados para o navegador não crashar)
+                    const concatInputs = videoClips.map((_, i) => `[v${i}]`).join('');
+                    filterParts.push(`${concatInputs}concat=n=${videoClips.length}:v=1:a=0[vout]`);
+                    
+                    let audioIdx = videoClips.length;
+                    let audioOuts = [];
+                    
+                    // Narração
                     if (narClip) {
                       const narMedia = library.find(m => m.id === narClip.mediaId);
                       if (narMedia) {
+                        setRenderState(p => ({ ...p, status: 'Preparando áudio da narração...' }));
                         const cached = fileCache.current[narMedia.name];
                         const buf = cached ? await cached.arrayBuffer() : await fetch(narMedia.url).then(r=>r.arrayBuffer());
                         await ffmpeg.writeFile('narration.mp3', new Uint8Array(buf));
-                        cmd.push('-i','narration.mp3');
-                        filterParts.push(`[1:a]volume=1.0[a1]`);
+                        cmd.push('-i', 'narration.mp3');
+                        
+                        filterParts.push(`[${audioIdx}:a]volume=1.0[anar]`);
+                        audioOuts.push(`[anar]`);
+                        audioIdx++;
                       }
                     }
-
-                    cmd.push('-vf','scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p');
-                    cmd.push('-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-r','24');
-
-                    if (filterParts.length > 0) {
-                      cmd.push('-filter_complex', filterParts.join(';'));
-                      cmd.push('-map','0:v','-map','[a1]','-c:a','aac','-shortest');
+                    
+                    // Música de Fundo
+                    if (bgmClip) {
+                      const bgmMedia = library.find(m => m.id === bgmClip.mediaId);
+                      if (bgmMedia) {
+                        setRenderState(p => ({ ...p, status: 'Preparando música de fundo...' }));
+                        const cached = fileCache.current[bgmMedia.name];
+                        const buf = cached ? await cached.arrayBuffer() : await fetch(bgmMedia.url).then(r=>r.arrayBuffer());
+                        await ffmpeg.writeFile('bgm.mp3', new Uint8Array(buf));
+                        cmd.push('-i', 'bgm.mp3');
+                        
+                        filterParts.push(`[${audioIdx}:a]volume=0.2[abgm]`);
+                        audioOuts.push(`[abgm]`);
+                        audioIdx++;
+                      }
                     }
+                    
+                    if (audioOuts.length > 0) {
+                        filterParts.push(`${audioOuts.join('')}amix=inputs=${audioOuts.length}:normalize=0[aout]`);
+                    } else {
+                        filterParts.push(`anullsrc=r=48000:cl=stereo[aout]`);
+                    }
+
+                    cmd.push('-filter_complex', filterParts.join(';'));
+                    cmd.push('-map', '[vout]', '-map', '[aout]');
+                    cmd.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p');
+                    cmd.push('-c:a', 'aac', '-b:a', '128k', '-shortest');
                     cmd.push('saida.mp4');
 
-                    setRenderState(p => ({ ...p, status: 'Renderizando vídeo...' }));
+                    setRenderState(p => ({ ...p, status: 'Renderizando vídeo local... (Isto pode demorar)' }));
                     await ffmpeg.exec(cmd);
 
+                    setRenderState(p => ({ ...p, status: 'Finalizando ficheiro...' }));
                     const data = await ffmpeg.readFile('saida.mp4');
                     const url  = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
                     const a    = document.createElement('a');
@@ -2205,12 +2309,13 @@ function App() {
                     setRenderState({ isRendering: false, progress: 100, status: '✅ Download iniciado!' });
                     setTimeout(() => setModal(null), 2000);
                   } catch(e) {
+                    console.error(e);
                     setRenderState({ isRendering: false, progress: 0, status: `Erro: ${e.message}` });
                   } finally {
-                    try { ffmpeg?.terminate(); } catch {}
+                    try { if(ffmpeg) ffmpeg.terminate(); } catch {}
                   }
                 }}>
-                {renderState.isRendering ? `⏳ ${renderState.status}` : '💻 Renderizar no Navegador (FFmpeg)'}
+                {renderState.isRendering ? `⏳ ${renderState.status}` : '💻 Renderizar Localmente no Navegador'}
               </button>
 
               {renderState.isRendering && (
