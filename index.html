@@ -341,26 +341,6 @@
     }
     @keyframes anim_fog { to { transform: translateX(-10%); } }
 
-    .animate-fade      { animation: fadeIn 0.3s ease; }
-    .transition-fade   { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-zoom   { animation: zoom_in var(--trans-dur, 0.8s) ease-out; }
-    .transition-crossfade { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-wipeleft  { animation: wipeleft var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-wiperight { animation: wiperight var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-slideleft { animation: slideleft var(--trans-dur, 0.8s) ease-out; }
-    .transition-slideright { animation: slideright var(--trans-dur, 0.8s) ease-out; }
-    .transition-slideup { animation: slideup var(--trans-dur, 0.8s) ease-out; }
-    .transition-slidedown { animation: slidedown var(--trans-dur, 0.8s) ease-out; }
-    .transition-fadeblack { animation: fadeblack var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-fadewhite { animation: fadewhite var(--trans-dur, 0.8s) ease-in-out; }
-    .transition-dissolve { animation: dissolve var(--trans-dur, 0.8s) ease-in-out; }
-    
-    .effect-kenburns   { animation: kenburns 12s linear forwards; }
-    .effect-kenburns2  { animation: kenburns2 12s linear forwards; }
-    .effect-zoom_in    { animation: zoom_in 12s linear forwards; }
-    .effect-pan_right  { animation: pan_right 12s linear forwards; }
-    .effect-pan_left   { animation: pan_left 12s linear forwards; }
-
   </style>
 </head>
 <body>
@@ -586,7 +566,6 @@ function App() {
       setFolderIds({ root: rootId, motor: motorId, fila: filaId, concluido: concId, erro: erroId, processando: procId });
       setDriveReady(true);
       startPolling(concId, erroId, procId, filaId);
-      // Pede permissão para notificações do sistema
       if (Notification.permission === 'default') Notification.requestPermission();
     } catch(e) {
       console.error('Erro ao configurar pastas Drive:', e);
@@ -611,12 +590,10 @@ function App() {
           ...erro.map(j => ({ ...j, status: 'erro' })),
         ];
 
-        // Notificação sonora quando job passa para concluido
         setJobs(prevJobs => {
           const prevConcluidos = new Set(prevJobs.filter(j => j.status === 'concluido').map(j => j.id));
           const novosConcluidos = novosJobs.filter(j => j.status === 'concluido' && !prevConcluidos.has(j.id));
           if (novosConcluidos.length > 0) {
-            // Toca beep de notificação
             try {
               const ctx = new (window.AudioContext || window.webkitAudioContext)();
               [0, 150, 300].forEach((delay, i) => {
@@ -631,7 +608,6 @@ function App() {
                 }, delay);
               });
             } catch {}
-            // Notificação do sistema se permitido
             if (Notification.permission === 'granted') {
               new Notification('✅ Motor de Dobra', { body: `Job concluído: ${novosConcluidos[0].name}` });
             }
@@ -677,16 +653,13 @@ function App() {
       const jobName = `job_${Date.now()}`;
       const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
 
-      // Upload áudio
       setAiStatus(p => ({ ...p, msg: 'Enviando áudio...', pct: 15 }));
       await driveApi.uploadFile(jobId, aiFiles.audio, 'audio.' + aiFiles.audio.name.split('.').pop(),
         (p) => setAiStatus(prev => ({ ...prev, pct: 15 + p * 20 })));
 
-      // Upload roteiro
       setAiStatus(p => ({ ...p, msg: 'Enviando roteiro...', pct: 36 }));
       await driveApi.uploadFile(jobId, aiFiles.roteiro, 'roteiro.txt');
 
-      // Upload imagens/vídeos
       for (let i = 0; i < aiFiles.images.length; i++) {
         const img = aiFiles.images[i];
         const ext = img.name.split('.').pop();
@@ -695,13 +668,11 @@ function App() {
         await driveApi.uploadFile(jobId, img, `${num}.${ext}`);
       }
 
-      // Upload BGM se existir
       if (aiFiles.bgm) {
         setAiStatus(p => ({ ...p, msg: 'Enviando música de fundo...', pct: 80 }));
         await driveApi.uploadFile(jobId, aiFiles.bgm, 'bgm.' + aiFiles.bgm.name.split('.').pop());
       }
 
-      // Cria job.json
       setAiStatus(p => ({ ...p, msg: 'Criando instrução do job...', pct: 90 }));
       const jobJson = {
         tipo: 'timeline_e_render',
@@ -714,13 +685,11 @@ function App() {
       };
       await driveApi.uploadJson(jobId, 'job.json', jobJson);
 
-      // Popula a biblioteca
       const novasMedias = [];
-
       for (let i = 0; i < aiFiles.images.length; i++) {
         const f   = aiFiles.images[i];
         const url = URL.createObjectURL(f);
-        const id  = `ai-img-${i}-${Date.now()}`;
+        const id  = `ai-img-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         fileCache.current[f.name] = f;
         novasMedias.push({ id, name: f.name, type: f.type, url, duration: 5 });
       }
@@ -728,7 +697,7 @@ function App() {
       if (aiFiles.audio) {
         const f   = aiFiles.audio;
         const url = URL.createObjectURL(f);
-        const id  = `ai-audio-${Date.now()}`;
+        const id  = `ai-audio-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         fileCache.current[f.name] = f;
         const dur = await new Promise(res => {
           const a = document.createElement('audio');
@@ -741,7 +710,7 @@ function App() {
       if (aiFiles.bgm) {
         const f   = aiFiles.bgm;
         const url = URL.createObjectURL(f);
-        const id  = `ai-bgm-${Date.now()}`;
+        const id  = `ai-bgm-${Date.now()}-${Math.random().toString(36).slice(2)}`;
         fileCache.current[f.name] = f;
         novasMedias.push({ id, name: f.name, type: f.type, url, duration: 5 });
       }
@@ -755,7 +724,7 @@ function App() {
       }
 
       setAiStatus({ step: 'aguardando', msg: '✅ Job enviado! Arquivos adicionados à biblioteca. Aguardando o Motor processar...', pct: 100, running: false, error: '' });
-      setModal(null);
+      setTimeout(() => setModal(null), 2000);
       setAiFiles({ audio: null, roteiro: null, images: [], bgm: null });
 
     } catch(e) {
@@ -783,7 +752,7 @@ function App() {
           let mediaId = byName[nomeNorm];
 
           if (!mediaId) {
-            mediaId = `placeholder-${i}-${Date.now()}`;
+            mediaId = `placeholder-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
             extraLibrary.push({
               id: mediaId, name: cena.arquivo,
               type: 'image/jpeg', url: null,
@@ -793,7 +762,7 @@ function App() {
           }
 
           newClips.push({
-            id: `clip-${i}-${Date.now()}`,
+            id: `clip-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
             mediaId,
             trackId:    'video-1',
             startTime:  cena.start,
@@ -805,7 +774,7 @@ function App() {
         const audioMedia = prevLib.find(m => m.type && m.type.startsWith('audio'));
         if (audioMedia) {
           newClips.push({
-            id: `clip-audio-${Date.now()}`,
+            id: `clip-audio-${Date.now()}-${Math.random().toString(36).slice(2)}`,
             mediaId:   audioMedia.id,
             trackId:   'audio-1',
             startTime: 0,
@@ -1207,13 +1176,22 @@ function App() {
   // ── RECONECTA MÍDIAS DA BIBLIOTECA PELO NOME ────────────────────────────────
   useEffect(() => {
     if (library.length === 0) return;
-    setClips(prevClips => prevClips.map(clip => {
-      const currentMedia = library.find(m => m.id === clip.mediaId);
-      if (currentMedia?.url) return clip;
-      const byName = library.find(m => m.url && !m.placeholder && m.name.toLowerCase() === (currentMedia?.name || '').toLowerCase());
-      if (byName) return { ...clip, mediaId: byName.id };
-      return clip;
-    }));
+    setClips(prevClips => {
+      let changed = false;
+      const nextClips = prevClips.map(clip => {
+        const currentMedia = library.find(m => m.id === clip.mediaId);
+        if (currentMedia && currentMedia.url) return clip;
+        if (currentMedia && currentMedia.name) {
+            const byName = library.find(m => m.url && !m.placeholder && m.name.toLowerCase() === currentMedia.name.toLowerCase());
+            if (byName) {
+                changed = true;
+                return { ...clip, mediaId: byName.id };
+            }
+        }
+        return clip;
+      });
+      return changed ? nextClips : prevClips;
+    });
   }, [library]);
 
   // ── FILE INPUT HELPER ───────────────────────────────────────────────────────
@@ -1229,14 +1207,18 @@ function App() {
     if (type === 'images') {
       const imgs = files.sort((a,b) => a.name.localeCompare(b.name,undefined,{numeric:true}));
       const newLib = imgs.map((f,i) => ({
-        id: `local-img-${i}-${Date.now()}`,
+        id: `local-img-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
         name: f.name,
         type: f.type,
         url: URL.createObjectURL(f),
         duration: 5,
       }));
       imgs.forEach(f => { fileCache.current[f.name] = f; });
-      setLibrary(prev => [...prev, ...newLib]);
+      setLibrary(prev => {
+        const existentes = new Set(prev.map(m => m.name.toLowerCase()));
+        const novas = newLib.filter(m => !existentes.has(m.name.toLowerCase()));
+        return [...prev, ...novas];
+      });
     }
   };
 
@@ -1334,23 +1316,14 @@ function App() {
                     m.onloadedmetadata = () => res(m.duration);
                     m.src = url;
                   });
-                  newMedias.push({ id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur });
+                  newMedias.push({ id: `local-img-${Date.now()}-${Math.random().toString(36).slice(2)}`, name: f.name, type: f.type, url, duration: dur });
                 }
                 Array.from(e.target.files).forEach(f => { fileCache.current[f.name] = f; });
 
                 setLibrary(prev => {
-                  const semPlaceholder = prev.filter(m => {
-                    if (!m.placeholder) return true;
-                    return !newMedias.find(n => n.name.toLowerCase() === m.name.toLowerCase());
-                  });
-                  setClips(prevClips => prevClips.map(clip => {
-                    const placeholder = prev.find(m => m.placeholder && m.id === clip.mediaId);
-                    if (!placeholder) return clip;
-                    const nova = newMedias.find(n => n.name.toLowerCase() === placeholder.name.toLowerCase());
-                    if (nova) return { ...clip, mediaId: nova.id };
-                    return clip;
-                  }));
-                  return [...semPlaceholder, ...newMedias];
+                  const existentes = new Set(prev.map(m => m.name.toLowerCase()));
+                  const novas = newMedias.filter(m => !existentes.has(m.name.toLowerCase()));
+                  return [...prev, ...novas];
                 });
               }}/>
             </label>
@@ -1364,7 +1337,7 @@ function App() {
                 setPast(p => [...p, clips]); setFuture([]);
                 const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
                 const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
-                setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, fit:'contain', transition:'none', transitionDuration: 0.8, effect:'none', filter:'none', filterIntensity: 100, fadeIn:0, fadeOut:0 }]);
+                setClips(prev => [...prev, { id: `clip-${Date.now()}-${Math.random().toString(36).slice(2)}`, mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, fit:'contain', transition:'none', transitionDuration: 0.8, effect:'none', filter:'none', filterIntensity: 100, fadeIn:0, fadeOut:0 }]);
                 if (lastEnd + m.duration > duration) setDuration(lastEnd + m.duration + 10);
               }} style={{
                 display:'flex', alignItems:'center', gap:6, padding:'5px 6px',
@@ -2212,6 +2185,7 @@ function App() {
 
                     let cmd = [];
                     let filterParts = [];
+                    let inputIndex = 0;
                     
                     // Escreve os arquivos das cenas
                     for (let i = 0; i < videoClips.length; i++) {
@@ -2243,14 +2217,17 @@ function App() {
                          ? `scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080` 
                          : `scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black`;
                          
-                      filterParts.push(`[${i}:v]trim=duration=${dur},setpts=PTS-STARTPTS,${scaleStr},format=yuv420p,setsar=1,fps=24[v${i}]`);
+                      filterParts.push(`[${inputIndex}:v]trim=duration=${dur},setpts=PTS-STARTPTS,${scaleStr},format=yuv420p,setsar=1,fps=24[v${inputIndex}]`);
+                      inputIndex++;
                     }
                     
-                    // Concatena todos os vídeos processados (versão leve sem efeitos pesados para o navegador não crashar)
-                    const concatInputs = videoClips.map((_, i) => `[v${i}]`).join('');
-                    filterParts.push(`${concatInputs}concat=n=${videoClips.length}:v=1:a=0[vout]`);
+                    if (inputIndex === 0) throw new Error("Nenhum arquivo válido encontrado para renderização.");
                     
-                    let audioIdx = videoClips.length;
+                    // Concatena todos os vídeos processados (versão leve sem efeitos pesados para o navegador não crashar)
+                    const concatInputs = Array.from({length: inputIndex}).map((_, i) => `[v${i}]`).join('');
+                    filterParts.push(`${concatInputs}concat=n=${inputIndex}:v=1:a=0[vout]`);
+                    
+                    let audioIdx = inputIndex;
                     let audioOuts = [];
                     
                     // Narração
