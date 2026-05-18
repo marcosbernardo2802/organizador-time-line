@@ -246,15 +246,40 @@
       from { clip-path: inset(0 100% 0 0); }
       to   { clip-path: inset(0 0 0 0); }
     }
+    @keyframes wipeup {
+      from { clip-path: inset(100% 0 0 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes wipedown {
+      from { clip-path: inset(0 0 100% 0); }
+      to   { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes diagtl { from { clip-path: polygon(0 0, 0 0, 0 0); } to { clip-path: polygon(0 0, 200% 0, 0 200%); } }
+    @keyframes diagtr { from { clip-path: polygon(100% 0, 100% 0, 100% 0); } to { clip-path: polygon(100% 0, -100% 0, 100% 200%); } }
+    @keyframes diagbl { from { clip-path: polygon(0 100%, 0 100%, 0 100%); } to { clip-path: polygon(0 100%, 200% 100%, 0 -100%); } }
+    @keyframes diagbr { from { clip-path: polygon(100% 100%, 100% 100%, 100% 100%); } to { clip-path: polygon(100% 100%, -100% 100%, 100% -100%); } }
     @keyframes slideleft { from { transform: translateX(100%); } to { transform: translateX(0); } }
     @keyframes slideright { from { transform: translateX(-100%); } to { transform: translateX(0); } }
     @keyframes slideup { from { transform: translateY(100%); } to { transform: translateY(0); } }
     @keyframes slidedown { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+    @keyframes smoothleft { from { opacity: 0.25; transform: translateX(12%) scale(1.03); filter: blur(8px); } to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); } }
+    @keyframes smoothright { from { opacity: 0.25; transform: translateX(-12%) scale(1.03); filter: blur(8px); } to { opacity: 1; transform: translateX(0) scale(1); filter: blur(0); } }
+    @keyframes smoothup { from { opacity: 0.25; transform: translateY(12%) scale(1.03); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
+    @keyframes smoothdown { from { opacity: 0.25; transform: translateY(-12%) scale(1.03); filter: blur(8px); } to { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); } }
     @keyframes fadeblack { from { filter: brightness(0); } to { filter: brightness(1); } }
     @keyframes fadewhite { from { filter: brightness(10); } to { filter: brightness(1); } }
-    @keyframes dissolve { from { opacity: 0; filter: blur(12px) contrast(0.4); transform: scale(1.05); } to { opacity: 1; filter: blur(0) contrast(1); transform: scale(1); } }
+    @keyframes dissolve { from { opacity: 0; filter: blur(5px); } to { opacity: 1; filter: blur(0); } }
+    @keyframes pixelize { from { opacity: 0; filter: blur(18px) contrast(2); image-rendering: pixelated; transform: scale(1.04); } to { opacity: 1; filter: blur(0) contrast(1); transform: scale(1); } }
+    @keyframes radial { from { clip-path: circle(0% at 50% 50%); filter: saturate(1.8); } to { clip-path: circle(75% at 50% 50%); filter: saturate(1); } }
+    @keyframes circleopen { from { clip-path: circle(0% at 50% 50%); } to { clip-path: circle(80% at 50% 50%); } }
+    @keyframes circleclose { from { clip-path: circle(80% at 50% 50%); opacity: 0; } to { clip-path: circle(80% at 50% 50%); opacity: 1; } }
+    @keyframes horzopen { from { clip-path: inset(0 50% 0 50%); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes horzclose { from { clip-path: inset(0 0 0 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+    @keyframes vertopen { from { clip-path: inset(50% 0 50% 0); } to { clip-path: inset(0 0 0 0); } }
+    @keyframes vertclose { from { clip-path: inset(0 0 0 0); opacity: 0; } to { clip-path: inset(0 0 0 0); opacity: 1; } }
+    @keyframes sliceh { from { clip-path: polygon(0 0, 100% 0, 100% 18%, 0 18%, 0 34%, 100% 34%, 100% 52%, 0 52%, 0 68%, 100% 68%, 100% 86%, 0 86%); transform: translateX(12%); opacity: 0; } to { clip-path: inset(0); transform: translateX(0); opacity: 1; } }
+    @keyframes slicev { from { clip-path: polygon(0 0, 18% 0, 18% 100%, 34% 100%, 34% 0, 52% 0, 52% 100%, 68% 100%, 68% 0, 86% 0, 86% 100%, 100% 100%, 100% 0); transform: translateY(12%); opacity: 0; } to { clip-path: inset(0); transform: translateY(0); opacity: 1; } }
 
-    /* FILTROS DE PARTICULAS (CSS OVERLAYS) */
     @keyframes grain_dance {
       0% { transform: translate(0, 0); }
       20% { transform: translate(-2%, 2%); }
@@ -263,83 +288,69 @@
       80% { transform: translate(2%, 2%); }
       100% { transform: translate(0, 0); }
     }
+
     .wrapper-grain::after {
-      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
+      content: "";
+      position: absolute;
+      inset: -20%;
+      width: 140%;
+      height: 140%;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
-      opacity: calc(var(--filter-intensity) / 100); mix-blend-mode: overlay; pointer-events: none; z-index: 5;
+      opacity: var(--grain-opacity, 0.4);
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 5;
       animation: grain_dance 0.4s steps(4) infinite;
     }
 
     .wrapper-vignette::after {
-      content: ""; position: absolute; inset: 0;
-      box-shadow: inset 0 0 calc(var(--filter-intensity) * 2px) rgba(0,0,0, 0.9); pointer-events: none; z-index: 5;
+      content: "";
+      position: absolute;
+      inset: 0;
+      box-shadow: inset 0 0 calc(var(--filter-intensity) * 2px) rgba(0,0,0, 0.9);
+      pointer-events: none;
+      z-index: 5;
     }
-
-    .wrapper-rain::after {
-      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
-      background-image: linear-gradient(transparent, rgba(255,255,255,0.7) 30%, transparent);
-      background-size: 4px 60px;
-      animation: anim_rain 0.2s linear infinite; transform: rotate(10deg); pointer-events: none; z-index: 5;
-      opacity: calc(var(--filter-intensity) / 100);
-    }
-    @keyframes anim_rain { to { background-position: 10px 200px; } }
-
-    .wrapper-snow::after {
-      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
-      background-image: radial-gradient(circle, white 2px, transparent 3px), radial-gradient(circle, rgba(255,255,255,0.6) 1px, transparent 2px);
-      background-size: 100px 100px, 50px 50px;
-      animation: anim_snow 3s linear infinite; pointer-events: none; z-index: 5;
-      opacity: calc(var(--filter-intensity) / 100);
-    }
-    @keyframes anim_snow { to { background-position: 50px 200px, 20px 100px; } }
-
-    .wrapper-stars::after {
-      content: ""; position: absolute; inset: 0; width: 100%; height: 100%;
-      background-image: radial-gradient(circle, white 1px, transparent 2px), radial-gradient(circle, rgba(255,255,255,0.8) 1.5px, transparent 2px);
-      background-size: 150px 150px, 90px 90px; background-position: 0 0, 40px 40px;
-      animation: pulse_stars 4s ease-in-out infinite; pointer-events: none; z-index: 5;
-      opacity: calc(var(--filter-intensity) / 100);
-    }
-    @keyframes pulse_stars { 0%, 100% { opacity: calc((var(--filter-intensity) / 100) * 0.5); } 50% { opacity: calc(var(--filter-intensity) / 100); } }
-
-    .wrapper-sparks::after {
-      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
-      background-image: radial-gradient(circle, #ffdd55 2px, transparent 4px), radial-gradient(circle, #ff8800 1px, transparent 3px);
-      background-size: 120px 120px, 80px 80px;
-      animation: anim_sparks 2s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
-      opacity: calc(var(--filter-intensity) / 100);
-    }
-    @keyframes anim_sparks { to { background-position: -50px -200px, 30px -150px; } }
-
-    .wrapper-embers::after {
-      content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
-      background-image: radial-gradient(circle, #ff4400 3px, transparent 6px), radial-gradient(circle, #ff1100 2px, transparent 4px);
-      background-size: 150px 150px, 100px 100px;
-      animation: anim_embers 4s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
-      opacity: calc(var(--filter-intensity) / 100);
-    }
-    @keyframes anim_embers { 0% { background-position: 0 0, 0 0; } 50% { opacity: calc((var(--filter-intensity)/100)*0.5); } to { background-position: -30px -150px, 40px -100px; } }
-
-    .wrapper-dust::after, .wrapper-particles::after {
-       content: ""; position: absolute; inset: -20%; width: 140%; height: 140%;
-       background-image: radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 2px), radial-gradient(circle, rgba(255,255,255,0.2) 2px, transparent 3px);
-       background-size: 80px 80px, 60px 60px;
-       animation: anim_dust 15s linear infinite; pointer-events: none; z-index: 5;
-       opacity: calc(var(--filter-intensity) / 100);
-    }
-    .wrapper-particles::after { animation-duration: 8s; background-image: radial-gradient(circle, rgba(255,255,255,0.6) 2px, transparent 3px); }
-    @keyframes anim_dust { to { background-position: 100px -50px, -50px 100px; } }
-
-    .wrapper-fog::after, .wrapper-smoke::after {
-      content: ""; position: absolute; inset: -50%; width: 200%; height: 200%;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-      animation: anim_fog 25s linear infinite; pointer-events: none; z-index: 5; mix-blend-mode: screen;
-      opacity: calc((var(--filter-intensity) / 100) * 0.5);
-    }
-    .wrapper-smoke::after {
-      animation-duration: 15s; mix-blend-mode: overlay; opacity: calc((var(--filter-intensity) / 100) * 0.4); filter: contrast(1.5);
-    }
-    @keyframes anim_fog { to { transform: translateX(-10%); } }
+    
+    .animate-fade      { animation: fadeIn 0.3s ease; }
+    .transition-fade   { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-zoom   { animation: zoom_in var(--trans-dur, 0.8s) ease-out; }
+    .transition-crossfade { animation: fadeIn var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wipeleft  { animation: wipeleft var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wiperight { animation: wiperight var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wipeup { animation: wipeup var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-wipedown { animation: wipedown var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-diagtl { animation: diagtl var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-diagtr { animation: diagtr var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-diagbl { animation: diagbl var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-diagbr { animation: diagbr var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-slideleft { animation: slideleft var(--trans-dur, 0.8s) ease-out; }
+    .transition-slideright { animation: slideright var(--trans-dur, 0.8s) ease-out; }
+    .transition-slideup { animation: slideup var(--trans-dur, 0.8s) ease-out; }
+    .transition-slidedown { animation: slidedown var(--trans-dur, 0.8s) ease-out; }
+    .transition-smoothleft { animation: smoothleft var(--trans-dur, 0.8s) ease-out; }
+    .transition-smoothright { animation: smoothright var(--trans-dur, 0.8s) ease-out; }
+    .transition-smoothup { animation: smoothup var(--trans-dur, 0.8s) ease-out; }
+    .transition-smoothdown { animation: smoothdown var(--trans-dur, 0.8s) ease-out; }
+    .transition-fadeblack { animation: fadeblack var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-fadewhite { animation: fadewhite var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-dissolve { animation: dissolve var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-pixelize { animation: pixelize var(--trans-dur, 0.8s) steps(6) both; }
+    .transition-radial { animation: radial var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-circleopen { animation: circleopen var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-circleclose { animation: circleclose var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-horzopen { animation: horzopen var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-horzclose { animation: horzclose var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-vertopen { animation: vertopen var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-vertclose { animation: vertclose var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-hlslice, .transition-hrslice { animation: sliceh var(--trans-dur, 0.8s) ease-in-out; }
+    .transition-vuslice, .transition-vdslice { animation: slicev var(--trans-dur, 0.8s) ease-in-out; }
+    
+    .effect-kenburns   { animation: kenburns 12s linear forwards; }
+    .effect-kenburns2  { animation: kenburns2 12s linear forwards; }
+    .effect-zoom_in    { animation: zoom_in 12s linear forwards; }
+    .effect-pan_right  { animation: pan_right 12s linear forwards; }
+    .effect-pan_left   { animation: pan_left 12s linear forwards; }
 
   </style>
 </head>
@@ -471,6 +482,7 @@ function App() {
   const [isPlaying,   setIsPlaying]   = useState(false);
   const [selectedId,  setSelectedId]  = useState(null);
   const [dragState,   setDragState]   = useState(null);
+  const [dragMediaId, setDragMediaId] = useState(null);
 
   // Histórico Undo/Redo
   const [past,   setPast]   = useState([]);
@@ -521,9 +533,42 @@ function App() {
 
   // Guias do Painel Direito
   const [rightPanelTab, setRightPanelTab] = useState('Ajustes');
+  const [duckingEnabled, setDuckingEnabled] = useState(true);
 
   // Preview
   const [previewSrc, setPreviewSrc] = useState(null);
+
+  const normalizeMediaName = (name) => String(name || '')
+    .toLowerCase()
+    .replace(/\.[^/.]+$/, '')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  const reconnectMissingMedia = () => {
+    const lookup = Object.fromEntries(
+      library.filter(m => m.url && !m.placeholder).map(m => [normalizeMediaName(m.name), m.id])
+    );
+
+    setClips(prevClips => prevClips.map(clip => {
+      const media = library.find(m => m.id === clip.mediaId);
+      const key = normalizeMediaName(media?.name);
+      const matchId = lookup[key];
+      return matchId ? { ...clip, mediaId: matchId } : clip;
+    }));
+
+    setLibrary(prevLib => prevLib.map(m => {
+      if (!m.placeholder) return m;
+      const matchId = lookup[normalizeMediaName(m.name)];
+      return matchId ? null : m;
+    }).filter(Boolean));
+
+    if (Object.keys(lookup).length > 0) {
+      alert('✅ Reconexão concluída. Clips vinculados à mídia encontrada na biblioteca.');
+    } else {
+      alert('🔎 Não foi possível reconectar mídias automaticamente. Carregue a mídia correspondente na biblioteca.');
+    }
+  };
 
   // ── GOOGLE LOGIN ────────────────────────────────────────────────────────────
   const initGoogleAuth = useCallback(() => {
@@ -566,6 +611,7 @@ function App() {
       setFolderIds({ root: rootId, motor: motorId, fila: filaId, concluido: concId, erro: erroId, processando: procId });
       setDriveReady(true);
       startPolling(concId, erroId, procId, filaId);
+      // Pede permissão para notificações do sistema
       if (Notification.permission === 'default') Notification.requestPermission();
     } catch(e) {
       console.error('Erro ao configurar pastas Drive:', e);
@@ -590,10 +636,12 @@ function App() {
           ...erro.map(j => ({ ...j, status: 'erro' })),
         ];
 
+        // Notificação sonora quando job passa para concluido
         setJobs(prevJobs => {
           const prevConcluidos = new Set(prevJobs.filter(j => j.status === 'concluido').map(j => j.id));
           const novosConcluidos = novosJobs.filter(j => j.status === 'concluido' && !prevConcluidos.has(j.id));
           if (novosConcluidos.length > 0) {
+            // Toca beep de notificação
             try {
               const ctx = new (window.AudioContext || window.webkitAudioContext)();
               [0, 150, 300].forEach((delay, i) => {
@@ -608,6 +656,7 @@ function App() {
                 }, delay);
               });
             } catch {}
+            // Notificação do sistema se permitido
             if (Notification.permission === 'granted') {
               new Notification('✅ Motor de Dobra', { body: `Job concluído: ${novosConcluidos[0].name}` });
             }
@@ -621,6 +670,7 @@ function App() {
   useEffect(() => () => { if (pollRef.current) clearInterval(pollRef.current); }, []);
 
   // ── ENVIAR JOB PARA O MOTOR ─────────────────────────────────────────────────
+  // Autentica sob demanda — só quando realmente precisa do Drive
   const autenticaSeNecessario = () => new Promise((resolve, reject) => {
     if (authState === 'ok' && driveApi.token) { resolve(); return; }
     setAuthState('loading');
@@ -653,26 +703,31 @@ function App() {
       const jobName = `job_${Date.now()}`;
       const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
 
+      // Upload áudio
       setAiStatus(p => ({ ...p, msg: 'Enviando áudio...', pct: 15 }));
       await driveApi.uploadFile(jobId, aiFiles.audio, 'audio.' + aiFiles.audio.name.split('.').pop(),
         (p) => setAiStatus(prev => ({ ...prev, pct: 15 + p * 20 })));
 
+      // Upload roteiro
       setAiStatus(p => ({ ...p, msg: 'Enviando roteiro...', pct: 36 }));
       await driveApi.uploadFile(jobId, aiFiles.roteiro, 'roteiro.txt');
 
+      // Upload imagens
       for (let i = 0; i < aiFiles.images.length; i++) {
         const img = aiFiles.images[i];
         const ext = img.name.split('.').pop();
         const num = String(i + 1).padStart(4, '0');
-        setAiStatus(p => ({ ...p, msg: `Enviando arquivo ${i+1}/${aiFiles.images.length}...`, pct: 38 + (i / aiFiles.images.length) * 40 }));
+        setAiStatus(p => ({ ...p, msg: `Enviando imagem ${i+1}/${aiFiles.images.length}...`, pct: 38 + (i / aiFiles.images.length) * 40 }));
         await driveApi.uploadFile(jobId, img, `${num}.${ext}`);
       }
 
+      // Upload BGM se existir
       if (aiFiles.bgm) {
         setAiStatus(p => ({ ...p, msg: 'Enviando música de fundo...', pct: 80 }));
         await driveApi.uploadFile(jobId, aiFiles.bgm, 'bgm.' + aiFiles.bgm.name.split('.').pop());
       }
 
+      // Cria job.json
       setAiStatus(p => ({ ...p, msg: 'Criando instrução do job...', pct: 90 }));
       const jobJson = {
         tipo: 'timeline_e_render',
@@ -685,11 +740,13 @@ function App() {
       };
       await driveApi.uploadJson(jobId, 'job.json', jobJson);
 
+      // Popula a biblioteca com os arquivos já carregados — evita re-upload manual
       const novasMedias = [];
+
       for (let i = 0; i < aiFiles.images.length; i++) {
         const f   = aiFiles.images[i];
         const url = URL.createObjectURL(f);
-        const id  = `ai-img-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const id  = `ai-img-${i}-${Date.now()}`;
         fileCache.current[f.name] = f;
         novasMedias.push({ id, name: f.name, type: f.type, url, duration: 5 });
       }
@@ -697,7 +754,7 @@ function App() {
       if (aiFiles.audio) {
         const f   = aiFiles.audio;
         const url = URL.createObjectURL(f);
-        const id  = `ai-audio-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const id  = `ai-audio-${Date.now()}`;
         fileCache.current[f.name] = f;
         const dur = await new Promise(res => {
           const a = document.createElement('audio');
@@ -710,13 +767,14 @@ function App() {
       if (aiFiles.bgm) {
         const f   = aiFiles.bgm;
         const url = URL.createObjectURL(f);
-        const id  = `ai-bgm-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        const id  = `ai-bgm-${Date.now()}`;
         fileCache.current[f.name] = f;
         novasMedias.push({ id, name: f.name, type: f.type, url, duration: 5 });
       }
 
       if (novasMedias.length > 0) {
         setLibrary(prev => {
+          // Evita duplicatas pelo nome
           const existentes = new Set(prev.map(m => m.name.toLowerCase()));
           const novas = novasMedias.filter(m => !existentes.has(m.name.toLowerCase()));
           return [...prev, ...novas];
@@ -724,7 +782,7 @@ function App() {
       }
 
       setAiStatus({ step: 'aguardando', msg: '✅ Job enviado! Arquivos adicionados à biblioteca. Aguardando o Motor processar...', pct: 100, running: false, error: '' });
-      setTimeout(() => setModal(null), 2000);
+      setModal(null);
       setAiFiles({ audio: null, roteiro: null, images: [], bgm: null });
 
     } catch(e) {
@@ -743,7 +801,9 @@ function App() {
       const newClips     = [];
       const extraLibrary = [];
 
+      // Usa setLibrary com callback para ter acesso à biblioteca atual
       setLibrary(prevLib => {
+        // Índice nome→id da biblioteca já carregada
         const byName = {};
         prevLib.forEach(m => { byName[m.name.toLowerCase()] = m.id; });
 
@@ -751,8 +811,9 @@ function App() {
           const nomeNorm = cena.arquivo.toLowerCase();
           let mediaId = byName[nomeNorm];
 
+          // Se não achou, cria placeholder para mostrar nome na timeline
           if (!mediaId) {
-            mediaId = `placeholder-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            mediaId = `placeholder-${i}-${Date.now()}`;
             extraLibrary.push({
               id: mediaId, name: cena.arquivo,
               type: 'image/jpeg', url: null,
@@ -762,24 +823,25 @@ function App() {
           }
 
           newClips.push({
-            id: `clip-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            id: `clip-${i}-${Date.now()}`,
             mediaId,
             trackId:    'video-1',
             startTime:  cena.start,
             duration:   cena.duration_real || cena.duration,
-            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0
+            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0, volume: 1.0
           });
         });
 
+        // Adiciona áudio automaticamente se estiver na biblioteca
         const audioMedia = prevLib.find(m => m.type && m.type.startsWith('audio'));
         if (audioMedia) {
           newClips.push({
-            id: `clip-audio-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            id: `clip-audio-${Date.now()}`,
             mediaId:   audioMedia.id,
             trackId:   'audio-1',
             startTime: 0,
             duration:  tl.duracao_total,
-            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0
+            offset: 0, fit: 'contain', transition: 'none', transitionDuration: 0.8, effect: 'none', filter: 'none', filterIntensity: 100, fadeIn: 0, fadeOut: 0, volume: 1.0
           });
         }
 
@@ -792,8 +854,9 @@ function App() {
       setDuration(tl.duracao_total + 10);
       setCurrentTime(0);
 
-      const msg = extraLibrary.length > 0
-        ? `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}\n\n⚠️ ${extraLibrary.length} imagens não encontradas na biblioteca.\nFaça upload pelo "+" para aparecerem no preview.`
+      const faltando = extraLibrary.length;
+      const msg = faltando > 0
+        ? `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}\n\n⚠️ ${faltando} imagens não encontradas na biblioteca.\nFaça upload pelo "+" para aparecerem no preview.`
         : `✅ Timeline importada! ${tl.total_cenas} cenas | score: ${tl.score_medio}`;
       alert(msg);
 
@@ -802,7 +865,7 @@ function App() {
     }
   };
 
-  // ── DRAG & DROP TIMELINE & SNAP ─────────────────────────────────────────────
+  // ── DRAG & DROP TIMELINE ────────────────────────────────────────────────────
   const onClipMouseDown = (e, clipId, type) => {
     e.stopPropagation();
     const clip = clips.find(c => c.id === clipId);
@@ -812,13 +875,15 @@ function App() {
 
   const getSnapTarget = (time, excludeId) => {
     let target = time;
-    let minD = 1.5 / zoom; 
+    let minD = 1.5 / zoom; // Threshold responsivo ao zoom
     
+    // Snap ao início absoluto da timeline
     if (Math.abs(time) < minD) {
       minD = Math.abs(time);
       target = 0;
     }
     
+    // Snap a outros clips
     clips.forEach(c => {
       if (c.id === excludeId) return;
       [c.startTime, c.startTime + c.duration].forEach(t => {
@@ -827,6 +892,7 @@ function App() {
       });
     });
 
+    // Snap à agulha de reprodução (Playhead vermelha)
     if (Math.abs(time - currentTime) < minD) {
       minD = Math.abs(time - currentTime);
       target = currentTime;
@@ -848,6 +914,8 @@ function App() {
         if (!snapOn) return { ...c, startTime: rawStart };
 
         const rawEnd = rawStart + dragState.origDur;
+        
+        // Verifica o que está mais perto: o início do clip colar em algo, ou o fim do clip colar em algo
         const snapStart = getSnapTarget(rawStart, c.id);
         const snapEnd = getSnapTarget(rawEnd, c.id);
         
@@ -862,7 +930,7 @@ function App() {
       if (dragState.type === 'resize-right') {
         const rawEnd = dragState.origStart + dragState.origDur + delta;
         const finalEnd = snapOn ? getSnapTarget(rawEnd, c.id).target : rawEnd;
-        const nd = Math.max(0.1, finalEnd - dragState.origStart); 
+        const nd = Math.max(0.1, finalEnd - dragState.origStart); // Bloqueia inversão de clip
         return { ...c, duration: nd };
       }
       
@@ -870,7 +938,7 @@ function App() {
         const rawStart = Math.max(0, dragState.origStart + delta);
         const finalStart = snapOn ? getSnapTarget(rawStart, c.id).target : rawStart;
         const nd = Math.max(0.1, (dragState.origStart + dragState.origDur) - finalStart);
-        if (finalStart >= dragState.origStart + dragState.origDur - 0.1) return c; 
+        if (finalStart >= dragState.origStart + dragState.origDur - 0.1) return c; // Bloqueia inversão
         return { ...c, startTime: finalStart, duration: nd };
       }
       
@@ -889,7 +957,51 @@ function App() {
     setDragState(null);
   };
 
-  // ── PLAYBACK E ATUALIZAÇÃO (RIPPLE) ─────────────────────────────────────────
+  const addClipToTimelineAt = (mediaId, trackId, startTime) => {
+    const media = library.find(m => m.id === mediaId);
+    if (!media) return;
+    setPast(p => [...p, clips]);
+    setFuture([]);
+    const durationValue = media.duration || 5;
+    const clip = {
+      id: Math.random().toString(36).slice(2),
+      mediaId,
+      trackId,
+      startTime: Math.max(0, startTime),
+      duration: durationValue,
+      offset: 0,
+      fit: 'contain',
+      transition: 'none',
+      transitionDuration: 0.8,
+      effect: 'none',
+      filter: 'none',
+      filterIntensity: 100,
+      fadeIn: 0,
+      fadeOut: 0,
+      volume: trackId === 'audio-2' ? 0.2 : 1.0,
+    };
+    setClips(prev => {
+      const next = [...prev, clip];
+      if (clip.startTime + durationValue > duration) setDuration(clip.startTime + durationValue + 10);
+      return next;
+    });
+  };
+
+  const onTimelineDrop = (e) => {
+    e.preventDefault();
+    const mediaId = dragMediaId || e.dataTransfer.getData('text/plain');
+    if (!mediaId) return;
+    const media = library.find(m => m.id === mediaId);
+    if (!media) return;
+    const rect = timelineRef.current.getBoundingClientRect();
+    const x = Math.max(0, e.clientX - rect.left + timelineRef.current.scrollLeft);
+    const startTime = x / (PPS * zoom);
+    const trackId = media.type?.startsWith('audio') ? 'audio-1' : 'video-1';
+    addClipToTimelineAt(mediaId, trackId, startTime);
+    setDragMediaId(null);
+  };
+
+  // ── PLAYBACK E ATUALIZAÇÃO ──────────────────────────────────────────────────
   const updateSelectedClip = (updates) => {
     setPast(p => [...p, clips]); setFuture([]);
     setClips(p => p.map(c => c.id === selectedId ? { ...c, ...updates } : c));
@@ -903,6 +1015,7 @@ function App() {
       const delta = newDuration - target.duration;
       return prev.map(c => {
         if (c.id === id) return { ...c, duration: newDuration };
+        // Se for na mesma trilha e estiver posicionado depois do clip alterado, ajusta o tempo (Ripple)
         if (snapOn && c.trackId === target.trackId && c.startTime > target.startTime + 0.01) {
            return { ...c, startTime: Math.max(0, c.startTime + delta) };
         }
@@ -916,6 +1029,34 @@ function App() {
     setClips(p => p.map(c => c.trackId === 'video-1' ? { ...c, ...updates } : c));
   };
 
+  const applyTransitionCycle = () => {
+    const pool = [
+      'crossfade', 'dissolve', 'smoothleft', 'smoothright',
+      'wipeleft', 'wiperight', 'wipeup', 'wipedown',
+      'radial', 'circleopen', 'pixelize', 'diagtl', 'diagbr'
+    ];
+    setPast(p => [...p, clips]);
+    setFuture([]);
+    setClips(prev => {
+      let idx = 0;
+      return prev.map(c => {
+        if (c.trackId !== 'video-1') return c;
+        const transition = idx === 0 ? 'none' : pool[(idx - 1) % pool.length];
+        idx += 1;
+        return {
+          ...c,
+          transition,
+          transitionDuration: c.transitionDuration ?? 0.8,
+        };
+      });
+    });
+  };
+
+  const getClipVolume = (clip, fallback = 1.0) => {
+    if (!clip) return fallback;
+    return clip.volume ?? volumes[clip.id] ?? fallback;
+  };
+
   useEffect(() => {
     const narClip = clips.find(c => c.trackId === 'audio-1');
     const bgmClip = clips.find(c => c.trackId === 'audio-2');
@@ -926,14 +1067,14 @@ function App() {
       if (narMedia?.url) {
         if (narrationRef.current.src !== narMedia.url) {
           narrationRef.current.src = narMedia.url;
-          narrationRef.current.volume = volumes[narClip.id] ?? 1.0;
+          narrationRef.current.volume = getClipVolume(narClip, 1.0);
           narrationRef.current.onended = () => {
             setIsPlaying(false);
             setCurrentTime(0);
             if (bgmRef.current) { bgmRef.current.pause(); bgmRef.current.currentTime = 0; }
           };
         } else {
-          narrationRef.current.volume = volumes[narClip?.id] ?? 1.0;
+          narrationRef.current.volume = getClipVolume(narClip, 1.0);
         }
         const expTime = currentTime - (narClip?.startTime || 0);
         if (Math.abs(narrationRef.current.currentTime - expTime) > 0.3) {
@@ -950,15 +1091,16 @@ function App() {
       if (bgmMedia?.url) {
         if (bgmRef.current.src !== bgmMedia.url) {
           bgmRef.current.src = bgmMedia.url;
-          bgmRef.current.volume = volumes[bgmClip.id] ?? 0.2;
+          bgmRef.current.volume = getClipVolume(bgmClip, 0.2);
         }
         const expTime = currentTime - (bgmClip?.startTime || 0);
         if (Math.abs(bgmRef.current.currentTime - expTime) > 0.3) {
           bgmRef.current.currentTime = Math.max(0, expTime);
         }
+        // Ducking: reduz BGM quando narração está tocando
         const narActive = clips.find(c => c.trackId === 'audio-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
-        const bgmVol = volumes[bgmClip?.id] ?? 0.2;
-        bgmRef.current.volume = narActive ? bgmVol * 0.3 : bgmVol;
+        const bgmVol = getClipVolume(bgmClip, 0.2);
+        bgmRef.current.volume = bgmVol * (duckingEnabled && narActive ? 0.3 : 1.0);
 
         if (isPlaying && bgmRef.current.paused) bgmRef.current.play().catch(()=>{});
         if (!isPlaying && !bgmRef.current.paused) bgmRef.current.pause();
@@ -975,6 +1117,7 @@ function App() {
         const delta = (now - lastRef.current) / 1000;
         lastRef.current = now;
         
+        // Calcula o final exato do último clipe na timeline
         const maxTime = clips.length > 0 ? Math.max(...clips.map(c => c.startTime + c.duration)) : duration;
 
         setCurrentTime(t => {
@@ -996,6 +1139,7 @@ function App() {
     return () => cancelAnimationFrame(animRef.current);
   }, [isPlaying, duration, clips]);
 
+  // Preview da imagem ativa
   useEffect(() => {
     const active = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration);
     if (active) {
@@ -1056,6 +1200,26 @@ function App() {
   };
 
   const [temProjetoSalvo, setTemProjetoSalvo] = useState(false);
+
+  const createNewProject = () => {
+    if (!confirm('Criar novo projeto? A timeline atual será perdida e o estado atual será redefinido.')) return;
+    setPast([]); setFuture([]); setClips([]); setLibrary([]); setDuration(60);
+    setCurrentTime(0); setSelectedId(null); setAiFiles({ audio: null, roteiro: null, images: [], bgm: null });
+    localStorage.removeItem('cronicas_projeto');
+    localStorage.removeItem('cronicas_salvo_em');
+    setTemProjetoSalvo(false);
+  };
+
+  const handleLogout = () => {
+    setAuthState('idle');
+    setUserInfo(null);
+    driveApi.token = null;
+    setDriveReady(false);
+    setFolderIds({});
+    setJobs([]);
+    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+  };
+
   useEffect(() => {
     const raw = localStorage.getItem('cronicas_projeto');
     setTemProjetoSalvo(!!raw);
@@ -1150,7 +1314,7 @@ function App() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [selectedId, duration, clips, undo, redo, snapOn]);
+  }, [selectedId, duration, clips, undo, redo]);
 
   // ── TELA CHEIA ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -1176,27 +1340,19 @@ function App() {
   // ── RECONECTA MÍDIAS DA BIBLIOTECA PELO NOME ────────────────────────────────
   useEffect(() => {
     if (library.length === 0) return;
-    setClips(prevClips => {
-      let changed = false;
-      const nextClips = prevClips.map(clip => {
-        const currentMedia = library.find(m => m.id === clip.mediaId);
-        if (currentMedia && currentMedia.url) return clip;
-        if (currentMedia && currentMedia.name) {
-            const byName = library.find(m => m.url && !m.placeholder && m.name.toLowerCase() === currentMedia.name.toLowerCase());
-            if (byName) {
-                changed = true;
-                return { ...clip, mediaId: byName.id };
-            }
-        }
-        return clip;
-      });
-      return changed ? nextClips : prevClips;
-    });
+    setClips(prevClips => prevClips.map(clip => {
+      const currentMedia = library.find(m => m.id === clip.mediaId);
+      if (currentMedia?.url) return clip;
+      const byName = library.find(m => m.url && !m.placeholder && m.name.toLowerCase() === (currentMedia?.name || '').toLowerCase());
+      if (byName) return { ...clip, mediaId: byName.id };
+      return clip;
+    }));
   }, [library]);
 
   // ── FILE INPUT HELPER ───────────────────────────────────────────────────────
   const handleFiles = async (e, type) => {
-    const files = Array.from(e.target.files);
+    const input = e.target;
+    const files = Array.from(input.files || []);
     if (!files.length) return;
     if (type === 'images') {
       const sorted = files.sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
@@ -1207,19 +1363,16 @@ function App() {
     if (type === 'images') {
       const imgs = files.sort((a,b) => a.name.localeCompare(b.name,undefined,{numeric:true}));
       const newLib = imgs.map((f,i) => ({
-        id: `local-img-${i}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        id: `local-img-${i}-${Date.now()}`,
         name: f.name,
         type: f.type,
         url: URL.createObjectURL(f),
         duration: 5,
       }));
       imgs.forEach(f => { fileCache.current[f.name] = f; });
-      setLibrary(prev => {
-        const existentes = new Set(prev.map(m => m.name.toLowerCase()));
-        const novas = newLib.filter(m => !existentes.has(m.name.toLowerCase()));
-        return [...prev, ...novas];
-      });
+      setLibrary(prev => [...prev, ...newLib]);
     }
+    input.value = '';
   };
 
   const motorStatus = () => {
@@ -1233,6 +1386,7 @@ function App() {
 
   const mStatus = motorStatus();
   const selectedClip = clips.find(c => c.id === selectedId);
+  const missingPlaceholders = library.filter(m => m.placeholder).length;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', height:'100vh' }}
@@ -1263,10 +1417,13 @@ function App() {
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           {userInfo ? (
-            <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'Share Tech Mono' }}
-              title="Atalhos: Espaço=Play/Pause | Delete=Remover | F=Tela Cheia | Home=Início | ←→=Navegar | Ctrl+/- =Zoom">
-              {userInfo.email} · ⌨️
-            </span>
+            <>
+              <span style={{ fontSize:11, color:'var(--muted)', fontFamily:'Share Tech Mono' }}
+                title="Atalhos: Espaço=Play/Pause | Delete=Remover | F=Tela Cheia | Home=Início | ←→=Navegar | Ctrl+/- =Zoom">
+                {userInfo.email} · ⌨️
+              </span>
+              <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={handleLogout} title="Desconectar do Google Drive">🚪 Sair</button>
+            </>
           ) : (
             <button className="btn btn-ghost" style={{ fontSize:11 }}
               onClick={() => autenticaSeNecessario().catch(()=>{})}
@@ -1274,6 +1431,7 @@ function App() {
               {authState === 'loading' ? '⟳' : '🔑'} {authState === 'loading' ? 'Conectando...' : 'Drive'}
             </button>
           )}
+          <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={createNewProject} title="Criar novo projeto">✨ Novo</button>
           <button className="btn btn-ghost" style={{ fontSize:11 }} onClick={carregaProjetoLocal}
             title={temProjetoSalvo ? `Projeto salvo: ${localStorage.getItem('cronicas_salvo_em')||''}` : 'Nenhum projeto salvo'}>
             {temProjetoSalvo ? '📂 Carregar' : '📂'}
@@ -1316,34 +1474,54 @@ function App() {
                     m.onloadedmetadata = () => res(m.duration);
                     m.src = url;
                   });
-                  newMedias.push({ id: `local-img-${Date.now()}-${Math.random().toString(36).slice(2)}`, name: f.name, type: f.type, url, duration: dur });
+                  newMedias.push({ id: Math.random().toString(36).slice(2), name: f.name, type: f.type, url, duration: dur });
                 }
                 Array.from(e.target.files).forEach(f => { fileCache.current[f.name] = f; });
 
                 setLibrary(prev => {
-                  const existentes = new Set(prev.map(m => m.name.toLowerCase()));
-                  const novas = newMedias.filter(m => !existentes.has(m.name.toLowerCase()));
-                  return [...prev, ...novas];
+                  const semPlaceholder = prev.filter(m => {
+                    if (!m.placeholder) return true;
+                    return !newMedias.find(n => n.name.toLowerCase() === m.name.toLowerCase());
+                  });
+                  setClips(prevClips => prevClips.map(clip => {
+                    const placeholder = prev.find(m => m.placeholder && m.id === clip.mediaId);
+                    if (!placeholder) return clip;
+                    const nova = newMedias.find(n => n.name.toLowerCase() === placeholder.name.toLowerCase());
+                    if (nova) return { ...clip, mediaId: nova.id };
+                    return clip;
+                  }));
+                  return [...semPlaceholder, ...newMedias];
                 });
               }}/>
             </label>
+            {missingPlaceholders > 0 && (
+              <button className="btn btn-ghost" style={{ fontSize:11, padding:'4px 8px' }} onClick={reconnectMissingMedia}>
+                🔄 Reconectar
+              </button>
+            )}
           </div>
           <div style={{ flex:1, overflowY:'auto', padding:6 }}>
             {library.length === 0 && (
               <div style={{ color:'var(--muted)', fontSize:11, textAlign:'center', padding:16 }}>Nenhuma mídia</div>
             )}
             {library.map(m => (
-              <div key={m.id} onClick={() => {
-                setPast(p => [...p, clips]); setFuture([]);
-                const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
-                const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
-                setClips(prev => [...prev, { id: `clip-${Date.now()}-${Math.random().toString(36).slice(2)}`, mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, fit:'contain', transition:'none', transitionDuration: 0.8, effect:'none', filter:'none', filterIntensity: 100, fadeIn:0, fadeOut:0 }]);
-                if (lastEnd + m.duration > duration) setDuration(lastEnd + m.duration + 10);
-              }} style={{
-                display:'flex', alignItems:'center', gap:6, padding:'5px 6px',
-                background:'var(--bg)', border:'1px solid var(--border)', borderRadius:2,
-                marginBottom:4, cursor:'pointer', fontSize:11,
-              }}>
+              <div key={m.id} draggable
+                   onDragStart={e => {
+                     e.dataTransfer.setData('text/plain', m.id);
+                     setDragMediaId(m.id);
+                   }}
+                   onDragEnd={() => setDragMediaId(null)}
+                   onClick={() => {
+                     setPast(p => [...p, clips]); setFuture([]);
+                     const trackId = m.type.startsWith('audio') ? 'audio-1' : 'video-1';
+                     const lastEnd = clips.filter(c => c.trackId === trackId).reduce((max, c) => Math.max(max, c.startTime + c.duration), 0);
+                     setClips(prev => [...prev, { id: Math.random().toString(36).slice(2), mediaId: m.id, trackId, startTime: lastEnd, duration: m.duration, offset:0, fit:'contain', transition:'none', transitionDuration: 0.8, effect:'none', filter:'none', filterIntensity: 100, fadeIn:0, fadeOut:0, volume: trackId === 'audio-2' ? 0.2 : 1.0 }]);
+                     if (lastEnd + m.duration > duration) setDuration(lastEnd + m.duration + 10);
+                   }} style={{
+                     display:'flex', alignItems:'center', gap:6, padding:'5px 6px',
+                     background:'var(--bg)', border:'1px solid var(--border)', borderRadius:2,
+                     marginBottom:4, cursor:'pointer', fontSize:11,
+                   }}>
                 <span>{m.type.startsWith('video') ? '🎬' : m.type.startsWith('audio') ? '🎵' : '🖼️'}</span>
                 <span style={{ overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap', color:'var(--text)' }}>{m.name}</span>
               </div>
@@ -1384,15 +1562,12 @@ function App() {
               
               <div 
                 className={
-                  (() => {
-                    const activeF = clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter;
-                    const overlays = ['grain', 'vignette', 'rain', 'snow', 'stars', 'sparks', 'embers', 'fog', 'smoke', 'dust', 'particles'];
-                    if (overlays.includes(activeF)) return `wrapper-${activeF}`;
-                    return '';
-                  })()
+                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'grain') ? 'wrapper-grain' : 
+                  (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filter === 'vignette') ? 'wrapper-vignette' : ''
                 }
                 style={{ 
                   position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  '--grain-opacity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100) / 100,
                   '--filter-intensity': (clips.find(c => c.trackId === 'video-1' && currentTime >= c.startTime && currentTime < c.startTime + c.duration)?.filterIntensity ?? 100)
                 }}
               >
@@ -1410,26 +1585,18 @@ function App() {
                     else if (effect !== 'none') effectClass = `effect-${effect}`;
 
                     let transClass = '';
-                    if (transition === 'fade') transClass = 'transition-fade';
-                    else if (transition === 'crossfade') transClass = 'transition-crossfade';
-                    else if (transition === 'wipeleft') transClass = 'transition-wipeleft';
-                    else if (transition === 'wiperight') transClass = 'transition-wiperight';
-                    else if (transition === 'slideleft') transClass = 'transition-slideleft';
-                    else if (transition === 'slideright') transClass = 'transition-slideright';
-                    else if (transition === 'slideup') transClass = 'transition-slideup';
-                    else if (transition === 'slidedown') transClass = 'transition-slidedown';
-                    else if (transition === 'fadeblack') transClass = 'transition-fadeblack';
-                    else if (transition === 'fadewhite') transClass = 'transition-fadewhite';
-                    else if (transition === 'dissolve') transClass = 'transition-dissolve';
+                    if (transition && transition !== 'none') {
+                      transClass = `transition-${transition}`;
+                    }
                     
                     let filterStyle = 'none';
                     if (filter === 'grayscale') filterStyle = `grayscale(${intensity}%)`;
                     if (filter === 'sepia') filterStyle = `sepia(${intensity}%)`;
-                    if (filter === 'blur') filterStyle = `blur(${intensity / 10}px)`; 
-                    if (filter === 'contrast') filterStyle = `contrast(${100 + intensity}%)`; 
-                    if (filter === 'saturate') filterStyle = `saturate(${100 + intensity * 2}%)`; 
+                    if (filter === 'blur') filterStyle = `blur(${intensity / 10}px)`; // 0 a 10px
+                    if (filter === 'contrast') filterStyle = `contrast(${100 + intensity}%)`; // 100% a 200%
+                    if (filter === 'saturate') filterStyle = `saturate(${100 + intensity * 2}%)`; // 100% a 300%
                     if (filter === 'invert') filterStyle = `invert(${intensity}%)`;
-                    if (filter === 'huerotate') filterStyle = `hue-rotate(${intensity * 3.6}deg)`; 
+                    if (filter === 'huerotate') filterStyle = `hue-rotate(${intensity * 3.6}deg)`; // 0 a 360deg
                     
                     const transDur = activeClip?.transitionDuration ?? 0.8;
 
@@ -1438,6 +1605,12 @@ function App() {
                         <img src={previewSrc} alt="preview"
                           className={effectClass}
                           style={{ width:'100%', height:'100%', objectFit: fitStyle, filter: filterStyle }} />
+                        {activeClip && (
+                          <div style={{ position:'absolute', left:12, bottom:12, padding:'6px 10px', background:'rgba(0,0,0,0.55)', borderRadius:4, color:'#fff', fontSize:11, zIndex:12 }}>
+                            <div style={{ fontWeight:700 }}>{library.find(m => m.id === activeClip.mediaId)?.name || 'Clip ativo'}</div>
+                            <div>{Math.max(0, activeClip.duration).toFixed(1)}s</div>
+                          </div>
+                        )}
                       </div>
                     );
                   })()
@@ -1543,31 +1716,18 @@ function App() {
                 {/* GUIA FILTROS */}
                 {rightPanelTab === 'Filtros' && selectedClip.trackId === 'video-1' && (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>FILTRO DE COR E PARTÍCULAS</label>
+                    <label style={{ fontSize:11, color:'var(--muted)', fontWeight:600 }}>FILTRO DE COR</label>
                     <select className="editor-select" value={selectedClip.filter || 'none'} onChange={e => updateSelectedClip({ filter: e.target.value })}>
                       <option value="none">Original</option>
-                      <optgroup label="Cor">
-                        <option value="grayscale">Preto e Branco</option>
-                        <option value="sepia">Sépia (Vintage)</option>
-                        <option value="blur">Desfoque (Blur)</option>
-                        <option value="contrast">Alto Contraste</option>
-                        <option value="saturate">Saturação (Cores Vibrantes)</option>
-                        <option value="vignette">Vinheta Dramática</option>
-                        <option value="invert">Negativo (Visão Raio-X)</option>
-                        <option value="huerotate">Matiz Alienígena</option>
-                      </optgroup>
-                      <optgroup label="Overlays / Partículas">
-                        <option value="grain">Film Grain (Granulação Cinematográfica)</option>
-                        <option value="dust">Dust (Poeira Flutuando)</option>
-                        <option value="rain">Rain (Chuva Animada)</option>
-                        <option value="snow">Snow (Neve Caindo)</option>
-                        <option value="fog">Fog (Névoa Cobrindo a Cena)</option>
-                        <option value="smoke">Smoke (Fumaça Dinâmica)</option>
-                        <option value="sparks">Sparks (Faíscas Elétricas/Metálicas)</option>
-                        <option value="embers">Embers (Brasas Flutuando)</option>
-                        <option value="stars">Stars (Campo de Estrelas Espacial)</option>
-                        <option value="particles">Particles (Pequenas Partículas)</option>
-                      </optgroup>
+                      <option value="grayscale">Preto e Branco</option>
+                      <option value="sepia">Sépia (Vintage)</option>
+                      <option value="blur">Desfoque (Blur)</option>
+                      <option value="contrast">Alto Contraste</option>
+                      <option value="saturate">Saturação (Cores Vibrantes)</option>
+                      <option value="vignette">Vinheta Dramática</option>
+                      <option value="invert">Negativo (Visão Raio-X)</option>
+                      <option value="huerotate">Matiz Alienígena</option>
+                      <option value="grain">Granulado (Film Grain)</option>
                     </select>
                     
                     {selectedClip.filter && selectedClip.filter !== 'none' && (
@@ -1600,12 +1760,34 @@ function App() {
                       <option value="fadeblack">Mergulho no Preto (Fade Black)</option>
                       <option value="fadewhite">Clarão Branco (Fade White)</option>
                       <option value="crossfade">Crossfade Suave</option>
+                      <option value="pixelize">Pixelizar</option>
+                      <option value="radial">Radial</option>
                       <option value="slideleft">Deslizar Esquerda</option>
                       <option value="slideright">Deslizar Direita</option>
                       <option value="slideup">Deslizar Cima</option>
                       <option value="slidedown">Deslizar Baixo</option>
+                      <option value="smoothleft">Smooth Esquerda</option>
+                      <option value="smoothright">Smooth Direita</option>
+                      <option value="smoothup">Smooth Cima</option>
+                      <option value="smoothdown">Smooth Baixo</option>
                       <option value="wipeleft">Wipe Esquerda</option>
                       <option value="wiperight">Wipe Direita</option>
+                      <option value="wipeup">Wipe Cima</option>
+                      <option value="wipedown">Wipe Baixo</option>
+                      <option value="diagtl">Diagonal Topo Esq.</option>
+                      <option value="diagtr">Diagonal Topo Dir.</option>
+                      <option value="diagbl">Diagonal Baixo Esq.</option>
+                      <option value="diagbr">Diagonal Baixo Dir.</option>
+                      <option value="circleopen">Íris Abrir</option>
+                      <option value="circleclose">Íris Fechar</option>
+                      <option value="horzopen">Abrir Horizontal</option>
+                      <option value="horzclose">Fechar Horizontal</option>
+                      <option value="vertopen">Abrir Vertical</option>
+                      <option value="vertclose">Fechar Vertical</option>
+                      <option value="hlslice">Fatias Horiz. Esq.</option>
+                      <option value="hrslice">Fatias Horiz. Dir.</option>
+                      <option value="vuslice">Fatias Vert. Cima</option>
+                      <option value="vdslice">Fatias Vert. Baixo</option>
                     </select>
 
                     {selectedClip.transition && selectedClip.transition !== 'none' && (
@@ -1622,6 +1804,7 @@ function App() {
                     )}
 
                     <button className="btn btn-ghost" style={{ fontSize:11, marginTop:8, justifyContent:'center' }} onClick={() => applyToAllVideos({ transition: selectedClip.transition, transitionDuration: selectedClip.transitionDuration ?? 0.8 })}>✦ Aplicar a todos</button>
+                    <button className="btn btn-gold" style={{ fontSize:11, justifyContent:'center' }} onClick={applyTransitionCycle}>Sequência automática</button>
                   </div>
                 )}
                 {rightPanelTab === 'Transições' && selectedClip.trackId !== 'video-1' && (
@@ -1634,19 +1817,31 @@ function App() {
                     <div>
                       <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
                         <span>VOLUME GLOBAL</span>
-                        <span className="mono">{Math.round((volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)) * 100)}%</span>
+                        <span className="mono">{Math.round(getClipVolume(selectedClip, selectedClip.trackId === 'audio-2' ? 0.2 : 1.0) * 100)}%</span>
                       </label>
                       <input type="range" min="0" max="1" step="0.05" style={{ width:'100%', marginTop:8, accentColor:'var(--accent2)' }}
-                        value={volumes[selectedId] ?? (selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
+                        value={getClipVolume(selectedClip, selectedClip.trackId === 'audio-2' ? 0.2 : 1.0)}
                         onChange={e => {
                           const v = parseFloat(e.target.value);
+                          updateSelectedClip({ volume: v });
                           setVolumes(p => ({ ...p, [selectedId]: v }));
                           if (selectedClip.trackId === 'audio-1' && narrationRef.current) narrationRef.current.volume = v;
                           if (selectedClip.trackId === 'audio-2' && bgmRef.current) bgmRef.current.volume = v;
                         }}
                       />
                     </div>
-                    
+
+                    <div>
+                      <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
+                        <span>DUCKING DE BGM</span>
+                        <span className="mono">{duckingEnabled ? 'ON' : 'OFF'}</span>
+                      </label>
+                      <button className={`btn ${duckingEnabled ? 'btn-primary' : 'btn-ghost'}`} style={{ width:'100%', padding:'8px 8px', fontSize:11 }}
+                        onClick={() => setDuckingEnabled(p => !p)}>
+                        {duckingEnabled ? 'Desativar Ducking' : 'Ativar Ducking'}
+                      </button>
+                    </div>
+
                     <div>
                       <label style={{ fontSize:11, color:'var(--muted)', display:'flex', justifyContent:'space-between', fontWeight:600 }}>
                         <span>FADE IN (Início)</span>
@@ -1761,7 +1956,9 @@ function App() {
                  const rect = timelineRef.current.getBoundingClientRect();
                  setCurrentTime(Math.max(0, (e.clientX - rect.left + timelineRef.current.scrollLeft) / (PPS * zoom)));
                  setSelectedId(null);
-               }}>
+               }}
+               onDragOver={e => e.preventDefault()}
+               onDrop={onTimelineDrop}>
             <div style={{ position:'relative', width: Math.max(duration * PPS * zoom, 1200), height:'100%' }}>
               {/* régua */}
               <div style={{ height:22, background:'var(--bg)', borderBottom:'1px solid var(--border)', position:'relative' }}>
@@ -1834,19 +2031,9 @@ function App() {
                           );
                         })()}
 
-                        {/* Indicadores Visuais de Edição (Tags) */}
-                        {!isAudio && (
-                          <div style={{ position:'absolute', bottom:4, left:18, display:'flex', gap:3, zIndex:6 }}>
-                            {clip.effect && clip.effect !== 'none' && (
-                              <span style={{ background:'var(--gold)', color:'#000', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Efeito: ${clip.effect}`}>E</span>
-                            )}
-                            {clip.filter && clip.filter !== 'none' && (
-                              <span style={{ background:'var(--accent2)', color:'#000', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Filtro: ${clip.filter}`}>F</span>
-                            )}
-                            {clip.transition && clip.transition !== 'none' && (
-                              <span style={{ background:'var(--accent)', color:'#fff', fontSize:9, fontWeight:700, padding:'1px 4px', borderRadius:2, boxShadow:'0 1px 2px rgba(0,0,0,0.5)' }} title={`Transição: ${clip.transition}`}>T</span>
-                            )}
-                          </div>
+                        {/* Indicador de Transição */}
+                        {!isAudio && clip.transition && clip.transition !== 'none' && (
+                          <div style={{ position:'absolute', right:0, top:0, bottom:0, width:12, background:'rgba(0,212,255,0.3)', borderLeft:'1px dashed var(--accent2)', zIndex:2 }} title={`Transição: ${clip.transition}`} />
                         )}
 
                         {/* resize right */}
@@ -1908,14 +2095,14 @@ function App() {
                   <input type="file" accept=".txt" style={{ display:'none' }} onChange={e => handleFiles(e,'roteiro')}/>
                 </label>
 
-                {/* imagens / videos */}
+                {/* imagens */}
                 <label className={`upload-slot ${aiFiles.images.length > 0 ? 'done' : ''}`}>
-                  <div className="upload-slot-icon" style={{ color: aiFiles.images.length > 0 ? 'var(--success)' : 'var(--muted)' }}>🎬</div>
+                  <div className="upload-slot-icon" style={{ color: aiFiles.images.length > 0 ? 'var(--success)' : 'var(--muted)' }}>🖼️</div>
                   <div className="upload-slot-info">
-                    <div className="upload-slot-label">CENAS (IMG/VÍDEO) *</div>
-                    <div className="upload-slot-name">{aiFiles.images.length > 0 ? `${aiFiles.images.length} arquivos` : 'Selecionar'}</div>
+                    <div className="upload-slot-label">IMAGENS *</div>
+                    <div className="upload-slot-name">{aiFiles.images.length > 0 ? `${aiFiles.images.length} imagens` : 'Selecionar todas'}</div>
                   </div>
-                  <input type="file" multiple accept="image/*,video/*" style={{ display:'none' }} onChange={e => handleFiles(e,'images')}/>
+                  <input type="file" multiple accept="image/*" style={{ display:'none' }} onChange={e => handleFiles(e,'images')}/>
                 </label>
 
                 {/* bgm */}
@@ -2063,6 +2250,7 @@ function App() {
                     const jobName = `render_${Date.now()}`;
                     const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
 
+                    // Usa fileCache para enviar arquivos originais sem fetch de blob
                     const getFile = async (media, nomeSaida) => {
                       const cached = fileCache.current[media.name];
                       if (cached) return new File([cached], nomeSaida || media.name, { type: cached.type });
@@ -2106,7 +2294,8 @@ function App() {
                       }
                     }
 
-                    // Envia timeline.json
+                    
+                    // Envia timeline.json com os tempos, efeitos e filtros atuais
                     const tlData = {
                       tipo: 'render',
                       duracao_total: duration,
@@ -2127,9 +2316,14 @@ function App() {
                         };
                       }),
                       audio: narClip ? ('audio.' + (library.find(m=>m.id===narClip.mediaId)?.name||'audio.mp3').split('.').pop()) : null,
+                      audio_volume: narClip ? getClipVolume(narClip, 1.0) : 1.0,
                       audio_fade_in: narClip ? (narClip.fadeIn || 0) : 0,
                       audio_fade_out: narClip ? (narClip.fadeOut || 0) : 0,
                       bgm:   bgmClip ? ('bgm.'   + (library.find(m=>m.id===bgmClip.mediaId)?.name||'bgm.mp3').split('.').pop())   : null,
+                      bgm_volume: bgmClip ? getClipVolume(bgmClip, 0.2) : 0.2,
+                      bgm_fade_in: bgmClip ? (bgmClip.fadeIn || 0) : 0,
+                      bgm_fade_out: bgmClip ? (bgmClip.fadeOut || 0) : 0,
+                      bgm_ducking: true,
                     };
                     await driveApi.uploadJson(jobId, 'timeline_render.json', tlData);
 
@@ -2150,134 +2344,105 @@ function App() {
                 🚀 Renderizar no Colab (Motor de Dobra)
               </button>
 
-              {/* Renderizar no Navegador FFmpeg (Local Simples) */}
+              {/* Renderizar no Navegador FFmpeg */}
               <button className="btn btn-ghost" style={{ justifyContent:'center', padding:'10px' }}
                 disabled={renderState.isRendering}
                 onClick={async () => {
                   const videoClips = clips.filter(c => c.trackId === 'video-1').sort((a,b) => a.startTime - b.startTime);
                   const narClip    = clips.find(c => c.trackId === 'audio-1');
                   const bgmClip    = clips.find(c => c.trackId === 'audio-2');
-                  
-                  if (videoClips.length === 0) { alert('Nenhuma cena na timeline.'); return; }
+                  if (videoClips.length === 0) { alert('Nenhuma imagem na timeline.'); return; }
 
-                  setRenderState({ isRendering: true, progress: 0, status: 'Carregando motor de renderização local...' });
+                  setRenderState({ isRendering: true, progress: 0, status: 'Carregando FFmpeg...' });
                   let ffmpeg = null;
-                  
                   try {
-                    const { FFmpeg } = await import('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js');
-                    ffmpeg = new FFmpeg();
-                    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+                    const { createFFmpeg } = await import('https://esm.sh/@ffmpeg/ffmpeg@0.12.10');
+                    const base = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+                    const fb   = 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm';
 
-                    setRenderState(p => ({ ...p, status: 'Baixando núcleos do FFmpeg local...' }));
-                    
-                    await ffmpeg.load({
-                        coreURL: await fetch(`${baseURL}/ffmpeg-core.js`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
-                        wasmURL: await fetch(`${baseURL}/ffmpeg-core.wasm`).then(r=>r.blob()).then(b=>URL.createObjectURL(b))
-                    });
+                    setRenderState(p => ({ ...p, status: 'Baixando motor FFmpeg...' }));
+                    const [coreURL, wasmURL] = await Promise.all([
+                      fetch(`${base}/ffmpeg-core.js`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
+                      fetch(`${base}/ffmpeg-core.wasm`).then(r=>r.blob()).then(b=>URL.createObjectURL(b)),
+                    ]);
+                    const workerText = await fetch(`${fb}/worker.js`).then(r=>r.text());
+                    const workerURL  = URL.createObjectURL(new Blob([workerText],{type:'text/javascript'}));
+
+                    ffmpeg = createFFmpeg({ log: false, coreURL, wasmURL, workerURL });
+                    await ffmpeg.load();
 
                     ffmpeg.on('log', ({ message }) => {
-                      const m = message.match(/time=\s*(\d{2}):(\d{2}):(\d{2})/);
+                      const m = message.match(/time=(\d{2}):(\d{2}):(\d{2})/);
                       if (m) {
                         const t = parseInt(m[1])*3600 + parseInt(m[2])*60 + parseInt(m[3]);
-                        setRenderState(p => ({ ...p, progress: Math.min(99, Math.round((t/duration)*100)), status: `Renderizando localmente: ${Math.min(99,Math.round((t/duration)*100))}%` }));
+                        setRenderState(p => ({ ...p, progress: Math.min(99, Math.round(t/duration*100)), status: `Renderizando: ${Math.min(99,Math.round(t/duration*100))}%` }));
                       }
                     });
 
-                    let cmd = [];
-                    let filterParts = [];
-                    let inputIndex = 0;
-                    
-                    // Escreve os arquivos das cenas
+                    let listTxt = '';
                     for (let i = 0; i < videoClips.length; i++) {
                       const clip  = videoClips[i];
                       const media = library.find(m => m.id === clip.mediaId);
                       if (!media?.url) continue;
-                      
-                      setRenderState(p => ({ ...p, status: `Preparando cena ${i+1}/${videoClips.length}...` }));
-                      
-                      const ext   = media.name.split('.').pop().toLowerCase() || 'jpg';
-                      const isVideo = ['mp4', 'webm', 'mov', 'avi'].includes(ext);
-                      const fname = `cena${i}.${ext}`;
-                      
+                      setRenderState(p => ({ ...p, status: `Preparando imagem ${i+1}/${videoClips.length}...` }));
+                      const ext   = media.name.split('.').pop() || 'jpg';
+                      const fname = `img${i}.${ext}`;
                       const cached = fileCache.current[media.name];
                       const buf   = cached ? await cached.arrayBuffer() : await fetch(media.url).then(r=>r.arrayBuffer());
                       await ffmpeg.writeFile(fname, new Uint8Array(buf));
-                      
-                      const dur = clip.duration;
-                      
-                      if (!isVideo) {
-                         cmd.push('-loop', '1', '-framerate', '24', '-t', String(dur + 0.1), '-i', fname);
-                      } else {
-                         cmd.push('-t', String(dur), '-i', fname);
-                      }
-                      
-                      // Prepara o filtro para padronizar resoluções de fotos e vídeos mistos no navegador
-                      const fit = clip.fit || 'contain';
-                      let scaleStr = fit === 'cover' 
-                         ? `scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080` 
-                         : `scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2:color=black`;
-                         
-                      filterParts.push(`[${inputIndex}:v]trim=duration=${dur},setpts=PTS-STARTPTS,${scaleStr},format=yuv420p,setsar=1,fps=24[v${inputIndex}]`);
-                      inputIndex++;
+                      const next = videoClips[i+1];
+                      const dur  = next ? (next.startTime - clip.startTime) : (duration - clip.startTime);
+                      listTxt += `file '${fname}'\nduration ${Math.max(0.1, dur).toFixed(3)}\n`;
                     }
-                    
-                    if (inputIndex === 0) throw new Error("Nenhum arquivo válido encontrado para renderização.");
-                    
-                    // Concatena todos os vídeos processados (versão leve sem efeitos pesados para o navegador não crashar)
-                    const concatInputs = Array.from({length: inputIndex}).map((_, i) => `[v${i}]`).join('');
-                    filterParts.push(`${concatInputs}concat=n=${inputIndex}:v=1:a=0[vout]`);
-                    
-                    let audioIdx = inputIndex;
-                    let audioOuts = [];
-                    
-                    // Narração
+                    const lastClip  = videoClips[videoClips.length-1];
+                    const lastMedia = library.find(m => m.id === lastClip.mediaId);
+                    if (lastMedia?.url) {
+                      const ext = lastMedia.name.split('.').pop() || 'jpg';
+                      listTxt += `file 'img${videoClips.length-1}.${ext}'\n`;
+                    }
+                    await ffmpeg.writeFile('list.txt', new TextEncoder().encode(listTxt));
+
+                    let cmd = ['-f','concat','-safe','0','-i','list.txt'];
+                    let filterParts = [];
+
                     if (narClip) {
                       const narMedia = library.find(m => m.id === narClip.mediaId);
                       if (narMedia) {
-                        setRenderState(p => ({ ...p, status: 'Preparando áudio da narração...' }));
                         const cached = fileCache.current[narMedia.name];
                         const buf = cached ? await cached.arrayBuffer() : await fetch(narMedia.url).then(r=>r.arrayBuffer());
                         await ffmpeg.writeFile('narration.mp3', new Uint8Array(buf));
-                        cmd.push('-i', 'narration.mp3');
-                        
-                        filterParts.push(`[${audioIdx}:a]volume=1.0[anar]`);
-                        audioOuts.push(`[anar]`);
-                        audioIdx++;
+                        cmd.push('-i','narration.mp3');
+                        filterParts.push(`[1:a]volume=${getClipVolume(narClip, 1.0).toFixed(3)}[a1]`);
                       }
                     }
-                    
-                    // Música de Fundo
+
                     if (bgmClip) {
                       const bgmMedia = library.find(m => m.id === bgmClip.mediaId);
                       if (bgmMedia) {
-                        setRenderState(p => ({ ...p, status: 'Preparando música de fundo...' }));
                         const cached = fileCache.current[bgmMedia.name];
                         const buf = cached ? await cached.arrayBuffer() : await fetch(bgmMedia.url).then(r=>r.arrayBuffer());
                         await ffmpeg.writeFile('bgm.mp3', new Uint8Array(buf));
-                        cmd.push('-i', 'bgm.mp3');
-                        
-                        filterParts.push(`[${audioIdx}:a]volume=0.2[abgm]`);
-                        audioOuts.push(`[abgm]`);
-                        audioIdx++;
+                        cmd.push('-i','bgm.mp3');
+                        const bgmInputIndex = narClip ? 2 : 1;
+                        filterParts.push(`[${bgmInputIndex}:a]volume=${getClipVolume(bgmClip, 0.2).toFixed(3)}[bgm]`);
                       }
                     }
-                    
-                    if (audioOuts.length > 0) {
-                        filterParts.push(`${audioOuts.join('')}amix=inputs=${audioOuts.length}:normalize=0[aout]`);
-                    } else {
-                        filterParts.push(`anullsrc=r=48000:cl=stereo[aout]`);
-                    }
 
-                    cmd.push('-filter_complex', filterParts.join(';'));
-                    cmd.push('-map', '[vout]', '-map', '[aout]');
-                    cmd.push('-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p');
-                    cmd.push('-c:a', 'aac', '-b:a', '128k', '-shortest');
+                    cmd.push('-vf','scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p');
+                    cmd.push('-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-r','24');
+
+                    if (filterParts.length > 0) {
+                      if (narClip && bgmClip) {
+                        filterParts.push(`[a1][bgm]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
+                      }
+                      cmd.push('-filter_complex', filterParts.join(';'));
+                      cmd.push('-map','0:v','-map', narClip && bgmClip ? '[aout]' : (narClip ? '[a1]' : '[bgm]'),'-c:a','aac','-shortest');
+                    }
                     cmd.push('saida.mp4');
 
-                    setRenderState(p => ({ ...p, status: 'Renderizando vídeo local... (Isto pode demorar)' }));
+                    setRenderState(p => ({ ...p, status: 'Renderizando vídeo...' }));
                     await ffmpeg.exec(cmd);
 
-                    setRenderState(p => ({ ...p, status: 'Finalizando ficheiro...' }));
                     const data = await ffmpeg.readFile('saida.mp4');
                     const url  = URL.createObjectURL(new Blob([data.buffer],{type:'video/mp4'}));
                     const a    = document.createElement('a');
@@ -2286,13 +2451,12 @@ function App() {
                     setRenderState({ isRendering: false, progress: 100, status: '✅ Download iniciado!' });
                     setTimeout(() => setModal(null), 2000);
                   } catch(e) {
-                    console.error(e);
                     setRenderState({ isRendering: false, progress: 0, status: `Erro: ${e.message}` });
                   } finally {
-                    try { if(ffmpeg) ffmpeg.terminate(); } catch {}
+                    try { ffmpeg?.terminate(); } catch {}
                   }
                 }}>
-                {renderState.isRendering ? `⏳ ${renderState.status}` : '💻 Renderizar Localmente no Navegador'}
+                {renderState.isRendering ? `⏳ ${renderState.status}` : '💻 Renderizar no Navegador (FFmpeg)'}
               </button>
 
               {renderState.isRendering && (
