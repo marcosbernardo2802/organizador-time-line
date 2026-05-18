@@ -399,6 +399,7 @@ const driveApi = {
   },
 
   async uploadFile(folderId, file, name, onProgress) {
+    console.log('uploadFile start', { folderId, name, type: file?.type, size: file?.size });
     const meta = JSON.stringify({ name: name || file.name, parents: [folderId] });
     const form = new FormData();
     form.append('metadata', new Blob([meta], { type: 'application/json' }));
@@ -408,8 +409,19 @@ const driveApi = {
       xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink');
       xhr.setRequestHeader('Authorization', `Bearer ${this.token}`);
       xhr.upload.onprogress = (e) => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
-      xhr.onload  = () => xhr.status < 300 ? resolve(JSON.parse(xhr.responseText)) : reject(new Error(`Upload falhou: ${xhr.status}`));
-      xhr.onerror = () => reject(new Error('Erro de rede no upload'));
+      xhr.onload  = () => {
+        if (xhr.status < 300) {
+          console.log('uploadFile success', { status: xhr.status, response: xhr.responseText });
+          resolve(JSON.parse(xhr.responseText));
+        } else {
+          console.error('uploadFile failed', { status: xhr.status, statusText: xhr.statusText, response: xhr.responseText });
+          reject(new Error(`Upload falhou: ${xhr.status} ${xhr.statusText} — ${xhr.responseText}`));
+        }
+      };
+      xhr.onerror = () => {
+        console.error('uploadFile network error', { folderId, name });
+        reject(new Error('Erro de rede no upload'));
+      };
       xhr.send(form);
     });
   },
@@ -702,6 +714,8 @@ function App() {
     try {
       const jobName = `job_${Date.now()}`;
       const jobId   = await driveApi.getOrCreateFolder(folderIds.fila, jobName);
+      console.log('Job folder criado:', jobId, jobName);
+      setAiStatus(p => ({ ...p, msg: `Pasta do job criada: ${jobName}`, pct: 10 }));
 
       // Upload áudio
       setAiStatus(p => ({ ...p, msg: 'Enviando áudio...', pct: 15 }));
@@ -786,6 +800,8 @@ function App() {
       setAiFiles({ audio: null, roteiro: null, images: [], bgm: null });
 
     } catch(e) {
+      console.error('Erro ao enviar job:', e);
+      alert(`Erro ao enviar job. Veja console para detalhes.\n${e.message}`);
       setAiStatus({ step: 'erro', msg: '', pct: 0, running: false, error: `Erro: ${e.message}` });
     }
   };
