@@ -2445,14 +2445,15 @@ function App() {
                     }
 
                     cmd.push('-vf','scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,format=yuv420p');
-                    cmd.push('-c:v','libx264','-preset','ultrafast','-pix_fmt','yuv420p','-r','24');
+                    cmd.push('-c:v','libx264','-preset','slow','-crf','23','-pix_fmt','yuv420p','-r','24');
+                    cmd.push('-movflags','+faststart');
 
                     if (filterParts.length > 0) {
                       if (narClip && bgmClip) {
                         filterParts.push(`[a1][bgm]amix=inputs=2:duration=first:dropout_transition=0[aout]`);
                       }
                       cmd.push('-filter_complex', filterParts.join(';'));
-                      cmd.push('-map','0:v','-map', narClip && bgmClip ? '[aout]' : (narClip ? '[a1]' : '[bgm]'),'-c:a','aac','-shortest');
+                      cmd.push('-map','0:v','-map', narClip && bgmClip ? '[aout]' : (narClip ? '[a1]' : '[bgm]'),'-c:a','aac','-b:a','128k','-shortest');
                     }
                     cmd.push('saida.mp4');
 
